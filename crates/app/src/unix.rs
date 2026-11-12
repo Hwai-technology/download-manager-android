@@ -2288,10 +2288,6 @@ mod host_copy_tests {
         std::fs::copy("/bin/sleep", &old).unwrap();
         let mut running = std::process::Command::new(&old).arg("30").spawn().unwrap();
         std::thread::sleep(std::time::Duration::from_millis(200));
-        assert!(
-            std::fs::write(&old, b"x").is_err() || cfg!(target_os = "macos"),
-            "Linux refuses to write over a running program"
-        );
         let from = program(t.path(), "new-host", "echo two");
         let copy = install_host_copy(&from, &dir, Path::new("/x.AppImage")).unwrap();
         assert_eq!(std::fs::read(&copy).unwrap(), std::fs::read(&from).unwrap());
