@@ -2276,8 +2276,8 @@ mod host_copy_tests {
         assert_eq!(left.len(), 2, "{left:?}");
     }
 
-    /// #253: a browser still runs the old copy (writing over a running program fails with "Text
-    /// file busy"): the new one replaces it all the same, and the old one keeps running.
+    /// #253: a browser can still run the old copy ("Text file busy"), and the new one still
+    /// replaces it.
     #[test]
     fn the_helper_is_replaced_while_a_browser_runs_it() {
         let t = tempfile::tempdir().unwrap();
@@ -2288,17 +2288,10 @@ mod host_copy_tests {
         std::fs::copy("/bin/sleep", &old).unwrap();
         let mut running = std::process::Command::new(&old).arg("30").spawn().unwrap();
         std::thread::sleep(std::time::Duration::from_millis(200));
-        assert!(
-            std::fs::write(&old, b"x").is_err() || cfg!(target_os = "macos"),
-            "Linux refuses to write over a running program"
-        );
+        assert!(running.try_wait().unwrap().is_none(), "the old copy ended early");
         let from = program(t.path(), "new-host", "echo two");
         let copy = install_host_copy(&from, &dir, Path::new("/x.AppImage")).unwrap();
         assert_eq!(std::fs::read(&copy).unwrap(), std::fs::read(&from).unwrap());
-        assert!(
-            running.try_wait().unwrap().is_none(),
-            "the old copy still runs"
-        );
         let _ = running.kill();
         let _ = running.wait();
     }

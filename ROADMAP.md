@@ -430,6 +430,8 @@ Everything below ships together, in version 0.5.0.
 - ✅ Every screenshot taken again on Windows and Linux (smaller files, WebP), and every page of the
   docs, the README and the website brought up to date
   ([#186](https://github.com/anefzaoui/misterdownloadmanager/issues/186))
+- ✅ CI checks remain portable across hosted runner filesystems and reject only referenced, tracked
+  screenshots
 
 ## Version 0.5.2
 
