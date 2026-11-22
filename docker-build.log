@@ -1,0 +1,51 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.58kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/rust:1-trixie
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/debian:trixie-slim
+#3 DONE 8.9s
+
+#4 [stage-1 1/3] FROM docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
+#4 resolve docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 0.0s done
+#4 DONE 0.1s
+
+#5 [stage-1 2/3] RUN apt-get update  && apt-get install -y --no-install-recommends ca-certificates  && rm -rf /var/lib/apt/lists/*  && mkdir -p /config /downloads && chown 1000:1000 /config /downloads
+#5 59.33 0 added, 0 removed; done.
+#5 59.33 Running hooks in /etc/ca-certificates/update.d...
+#5 59.33 done.
+#5 DONE 59.4s
+
+#2 [internal] load metadata for docker.io/library/rust:1-trixie
+#2 DONE 8.9s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 161B done
+#6 DONE 0.0s
+
+#7 [build 1/5] FROM docker.io/library/rust:1-trixie@sha256:223cc32ddca8f3ee90c436dbc94b6b5f052ea7f9653c5201e9612f08ad7d21b8
+#7 resolve docker.io/library/rust:1-trixie@sha256:223cc32ddca8f3ee90c436dbc94b6b5f052ea7f9653c5201e9612f08ad7d21b8 0.0s done
+#7 sha256:e8a88afca2bd37d4058d4b33d9d4d29b0557f8b811bb8c106942b5b51e1e4aad 25.63MB / 25.63MB 57.3s done
+#7 sha256:696c1fe91c64662be9b13aa92628d62d6685ab94c0b55d185258a8f762133deb 50.33MB / 237.23MB 157.8s
+#7 sha256:411d2dc8717dbb4bb0d3cfa27e6e0275fca455c5220029d7a14dc7a75fbe8665 30.41MB / 67.82MB 157.8s
+#7 sha256:a6dd1c05fbba4f9028078a11f143cbb625d2408921eb8207bfa1dd1ad301276f 47.19MB / 49.41MB 100.5s
+#7 sha256:298036cbc6850564df5f4ac67bd70e66c38142d20da7ffb839ef8a1bb2d11ca1 62.91MB / 224.06MB 157.8s
+#7 ...
+
+#8 [internal] load build context
+#8 transferring context: 82.53MB 0.5s done
+#8 DONE 0.6s
+
+#7 [build 1/5] FROM docker.io/library/rust:1-trixie@sha256:223cc32ddca8f3ee90c436dbc94b6b5f052ea7f9653c5201e9612f08ad7d21b8
+#7 sha256:a6dd1c05fbba4f9028078a11f143cbb625d2408921eb8207bfa1dd1ad301276f 49.41MB / 49.41MB 105.1s done
+#7 extracting sha256:a6dd1c05fbba4f9028078a11f143cbb625d2408921eb8207bfa1dd1ad301276f
+#7 sha256:298036cbc6850564df5f4ac67bd70e66c38142d20da7ffb839ef8a1bb2d11ca1 65.01MB / 224.06MB 162.9s
+#7 sha256:696c1fe91c64662be9b13aa92628d62d6685ab94c0b55d185258a8f762133deb 53.48MB / 237.23MB 162.9s
+#7 sha256:411d2dc8717dbb4bb0d3cfa27e6e0275fca455c5220029d7a14dc7a75fbe8665 32.51MB / 67.82MB 162.9s
+#7 extracting sha256:a6dd1c05fbba4f9028078a11f143cbb625d2408921eb8207bfa1dd1ad301276f 0.6s done
+#7 extracting sha256:e8a88afca2bd37d4058d4b33d9d4d29b0557f8b811bb8c106942b5b51e1e4aad
+#7 extracting sha256:e8a88afca2bd37d4058d4b33d9d4d29b0557f8b811bb8c106942b5b51e1e4aad 0.3s done

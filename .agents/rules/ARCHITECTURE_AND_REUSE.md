@@ -10,7 +10,7 @@
 - Prefer the smallest change that satisfies the requirement while preserving existing behavior.
 - Architectural consistency and functional correctness take priority over cosmetic organization.
 
-## 2. Preserve Upstream Crate Boundaries
+## 2. Preserve Upstream Crate Boundaries 
 
 - Preserve existing upstream Rust crate boundaries.
 - Preserve the current responsibilities of each crate unless a concrete technical reason requires a change.

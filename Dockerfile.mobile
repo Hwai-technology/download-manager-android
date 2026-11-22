@@ -1,0 +1,148 @@
+# Multi-Stage Docker Build Pipeline for Mister Download Manager Native Mobile
+# Syntax & capabilities: BuildKit enabled
+
+# -----------------------------------------------------------------------------
+# Stage 1: Base Environment
+# Includes Rust 1.95+, OpenJDK 17, and core system utilities
+# -----------------------------------------------------------------------------
+FROM ubuntu:24.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+# Install base dependencies, JDK 17, build essentials
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    git \
+    unzip \
+    openjdk-17-jdk \
+    clang \
+    cmake \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust toolchain (1.85+ / compatible with edition 2024 & rust-version 1.95)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal \
+    && rustup target add aarch64-linux-android x86_64-linux-android
+
+# -----------------------------------------------------------------------------
+# Stage 2: Android SDK & NDK Dependency Preparation
+# -----------------------------------------------------------------------------
+FROM base AS android-sdk-base
+
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_NDK_VERSION=27.1.12297006
+ENV ANDROID_NDK_ROOT=/opt/android-sdk/ndk/${ANDROID_NDK_VERSION}
+ENV ANDROID_NDK_HOME=/opt/android-sdk/ndk/${ANDROID_NDK_VERSION}
+
+# Install Android command-line tools
+RUN mkdir -p /opt/android-sdk/cmdline-tools && \
+    curl -o /tmp/cmdline-tools.zip -L https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip && \
+    unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools && \
+    mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest && \
+    rm /tmp/cmdline-tools.zip
+
+# Accept licenses and install platform-tools, platforms;android-35, build-tools;35.0.0, and NDK
+RUN yes | sdkmanager --licenses && \
+    sdkmanager --install \
+        "platform-tools" \
+        "platforms;android-35" \
+        "build-tools;35.0.0" \
+        "ndk;${ANDROID_NDK_VERSION}"
+
+WORKDIR /workspace
+
+# -----------------------------------------------------------------------------
+# Stage 3: Rust Core & Android Native Libraries
+# Compiles mdm-mobile for aarch64-linux-android & x86_64-linux-android
+# -----------------------------------------------------------------------------
+FROM android-sdk-base AS android-libs-builder
+
+WORKDIR /workspace
+
+# Copy workspace manifests first for caching
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+COPY tools ./tools
+COPY docker/patches ./docker/patches
+
+# Seed rquickjs-sys cached bindings if needed before building
+RUN cargo fetch --locked
+
+RUN set -eu; \
+    RQUICKJS_SYS_DIR=$(find /usr/local/cargo/registry/src/ -type d -name "rquickjs-sys*" 2>/dev/null | head -n 1 || true); \
+    if [ -n "$RQUICKJS_SYS_DIR" ] && [ -d "$RQUICKJS_SYS_DIR/src/bindings" ]; then \
+        cp docker/patches/rquickjs-sys/*.rs "$RQUICKJS_SYS_DIR/src/bindings/" 2>/dev/null || true; \
+    fi
+
+# Build Android native libraries using project's verified tool
+RUN chmod +x tools/build-android-libs.sh && ./tools/build-android-libs.sh
+
+# -----------------------------------------------------------------------------
+# Stage 4: Rust Test & Verification
+# -----------------------------------------------------------------------------
+FROM base AS rust-verifier
+
+WORKDIR /workspace
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+RUN cargo test -p mdm-mobile
+RUN cargo check -p mdm-app
+
+# -----------------------------------------------------------------------------
+# Stage 5: Android Application Builder
+# Builds Debug APK, Release APK, and Release AAB
+# -----------------------------------------------------------------------------
+FROM android-sdk-base AS android-builder
+
+WORKDIR /workspace
+# Copy Android project
+COPY android ./android
+# Copy compiled native libraries from android-libs-builder
+COPY --from=android-libs-builder /workspace/android/app/src/main/jniLibs ./android/app/src/main/jniLibs
+
+WORKDIR /workspace/android
+RUN chmod +x gradlew
+
+# Download Gradle and dependencies
+RUN ./gradlew --version
+
+# Build Debug APK
+RUN ./gradlew assembleDebug --stacktrace
+
+# Build Release APK and Release AAB (unsigned or signed if env credentials exist)
+RUN ./gradlew assembleRelease bundleRelease --stacktrace
+
+# -----------------------------------------------------------------------------
+# Stage 6: Release Artifacts Collector
+# Consolidates all build outputs into /output
+# -----------------------------------------------------------------------------
+FROM base AS artifacts-collector
+
+WORKDIR /workspace
+
+COPY --from=android-libs-builder /workspace/android/app/src/main/jniLibs /artifacts/jniLibs
+COPY --from=android-builder /workspace/android/app/build/outputs/apk /artifacts/apk
+COPY --from=android-builder /workspace/android/app/build/outputs/bundle /artifacts/bundle
+COPY crates/mobile/include/mdm_mobile.h /artifacts/ios/mdm_mobile.h
+COPY tools/build-ios-libs.sh /artifacts/ios/build-ios-libs.sh
+
+CMD ["sh", "-c", "\
+    mkdir -p /output/rust /output/android/debug /output/android/release /output/android/bundle /output/ios/build-preparation && \
+    cp -r /artifacts/jniLibs /output/rust/ && \
+    find /artifacts/apk -name '*debug*.apk' -exec cp {} /output/android/debug/ \\; 2>/dev/null || true && \
+    find /artifacts/apk -name '*release*.apk' -exec cp {} /output/android/release/ \\; 2>/dev/null || true && \
+    find /artifacts/bundle -name '*release*.aab' -exec cp {} /output/android/bundle/ \\; 2>/dev/null || true && \
+    cp /artifacts/ios/* /output/ios/build-preparation/ 2>/dev/null || true && \
+    echo '=== Build pipeline completed successfully ===' && \
+    echo 'Collected artifacts:' && \
+    ls -laR /output\
+"]

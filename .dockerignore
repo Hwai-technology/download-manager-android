@@ -1,7 +1,9 @@
 target/
+build-output/
+android/.gradle/
+android/app/build/
+ios/MisterDownloadManager/Libs/
 .git/
-k/
-notes/
-website/
-docs/bench/
-**/node_modules/
+.system_generated/
+*.log
+docker/config/

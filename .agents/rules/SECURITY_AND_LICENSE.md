@@ -10,7 +10,7 @@
 - Minimize exposed attack surfaces, application privileges, and sensitive data access.
 - Do not introduce security-sensitive behavior without understanding its threat model and operational consequences.
 - Do not claim that the application or a component is secure merely because it uses encryption or a security-related library.
-
+ 
 ## 2. Secrets and Sensitive Information
 
 Never expose, log, commit, or transmit secrets unnecessarily.

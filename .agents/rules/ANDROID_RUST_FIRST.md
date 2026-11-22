@@ -10,7 +10,7 @@
 - Do not introduce additional platforms, frameworks, or technology stacks unless explicitly approved.
 - Android compatibility must be established through actual build and runtime verification, not assumptions or documentation claims.
 
-## 2. Rust-First Architecture
+## 2. Rust-First Architecture 
 
 - Rust is the primary implementation language for reusable application logic and the download engine.
 - Download orchestration, HTTP/HTTPS transfer logic, segmentation, scheduling, retry policies, download state management, integrity verification, and other reusable engine responsibilities should remain in Rust whenever the existing architecture supports them.

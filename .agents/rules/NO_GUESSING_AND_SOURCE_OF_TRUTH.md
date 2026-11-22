@@ -12,7 +12,7 @@
 - Never treat a proposed architecture, folder tree, issue description, or previous AI-generated explanation as proof of implementation.
 
 When sources disagree, prioritize direct evidence from the checked-out implementation and its actual build configuration. Investigate the discrepancy and report it.
-
+ 
 ## 2. No Invented Repository Details
 
 Never invent or assume the existence of:

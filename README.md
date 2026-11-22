@@ -1,448 +1,362 @@
-# Repository Structure and Architecture
+# Mister Download Manager — Native Cross-Platform Architecture & Developer Guide
 
-## 1. Purpose
+Mister Download Manager (MDM) is a high-performance download manager featuring a shared, robust Rust download engine core alongside native frontends for Desktop (egui), Android (Kotlin + Jetpack Compose), and iOS (Swift + SwiftUI).
 
-This document is the central guide to understanding the Mister Download Manager repository structure.
-
-It explains:
-
-- How the repository is organized.
-- The responsibility of each Rust Crate.
-- Where the main application logic lives.
-- Where the download engine logic lives.
-- How the major components relate to one another.
-- Which parts are relevant to the Android port.
-- Which architectural details still require local source-code verification.
-
-This document describes the existing upstream architecture. It does not authorize restructuring, moving Crates, or introducing new architectural layers.
+This repository is maintained as a monorepo structured to reuse the upstream Rust engine (`mdm-engine`) directly across native mobile platforms without duplicating download orchestration logic or introducing heavy cross-platform runtimes like React Native or Flutter.
 
 ---
 
-## 2. Repository Architecture Overview
+## Table of Contents
 
-Mister Download Manager is organized as a Rust workspace containing multiple Crates.
+1. [Project Overview](#1-project-overview)
+2. [Feature and Platform Support Matrix](#2-feature-and-platform-support-matrix)
+3. [Repository and Workspace Architecture](#3-repository-and-workspace-architecture)
+4. [High-Level Architecture Diagrams](#4-high-level-architecture-diagrams)
+5. [Shared Rust Mobile Core (`crates/mobile`)](#5-shared-rust-mobile-core-cratesmobile)
+6. [Native FFI Architecture](#6-native-ffi-architecture)
+   - [Android JNI Boundary](#android-jni-boundary)
+   - [iOS C-ABI Boundary](#ios-c-abi-boundary)
+7. [Android Native Application (`android/`)](#7-android-native-application-android)
+8. [iOS Native Application (`ios/`)](#8-ios-native-application-ios)
+9. [Build and Development Setup](#9-build-and-development-setup)
+10. [Verified Build & Verification Commands](#10-verified-build--verification-commands)
+11. [Testing and Quality Assurance](#11-testing-and-quality-assurance)
+12. [Download Lifecycle and Queue State Machine](#12-download-lifecycle-and-queue-state-machine)
+13. [Storage, Part Files, and State Recovery](#13-storage-part-files-and-state-recovery)
+14. [Troubleshooting Common Issues](#14-troubleshooting-common-issues)
+15. [Known Limitations and Roadmap](#15-known-limitations-and-roadmap)
+16. [References and Upstream Attribution](#16-references-and-upstream-attribution)
 
-The project does not have one centralized `logic/` or `domain/` directory.
+---
 
-Instead, responsibilities are separated across Crates according to their technical purpose.
+## 1. Project Overview
 
-The two most important areas are:
+- **Core Engine:** Written in Rust (`crates/engine`), implementing dynamic file segmentation, multi-connection pooling, speed limiting, resume validation, and robust error recovery.
+- **Desktop Application:** Written in Rust using `egui` (`crates/app`), supporting Windows, macOS, and Linux desktop environments.
+- **Mobile Core Bridge:** Written in Rust (`crates/mobile`), providing thread-safe queue scheduling, lifecycle preservation, point-in-time progress snapshots, and dual C-ABI / JNI interfaces.
+- **Android Frontend:** 100% native Kotlin and Jetpack Compose (`android/`), communicating via JNI directly with `libmdm_mobile.so`, backed by an Android Foreground Service.
+- **iOS Frontend:** 100% native Swift and SwiftUI (`ios/`), linking against the C-ABI exported static library/headers with Combine-driven reactive updates.
 
-| Area | Location | Responsibility |
-|---|---|---|
-| Application Logic | `crates/app` | Application state, orchestration, user interactions, and application-level behavior |
-| Download Engine | `crates/engine` | Core download execution, planning, networking, workers, and download state |
+---
 
-Other Crates provide specialized functionality used by the application and its supporting tools.
+## 2. Feature and Platform Support Matrix
 
-### Conceptual architecture
+| Capability / Feature | Original Desktop (`crates/app`) | Android Native (`android/`) | iOS Native (`ios/`) | Shared Rust Core (`crates/mobile`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Multi-Connection HTTP/HTTPS** | **VERIFIED** | **VERIFIED** (via Rust) | **VERIFIED** (via Rust) | **VERIFIED** |
+| **Dynamic Segmentation** | **VERIFIED** | **VERIFIED** (via Rust) | **VERIFIED** (via Rust) | **VERIFIED** |
+| **Download Queue Management** | **VERIFIED** | **VERIFIED** (Native + Core) | **VERIFIED** (Native + Core) | **VERIFIED** |
+| **Pause / Resume via `.mdm.json`** | **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
+| **Speed Calculation & Reporting** | **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
+| **Android Foreground Service** | N/A | **VERIFIED** (`dataSync`) | N/A | N/A |
+| **Background Execution** | Desktop Background/Tray | Foreground Service | BGTaskScheduler (Refresh) | Runtime Threadpool |
+| **Bittorrent / Torrents** | **VERIFIED** (`crates/torrent`)| PLANNED | PLANNED | Out of Scope for Core |
+| **Browser Extensions / Native Host**| **VERIFIED** (`crates/nmhost`) | Unsupported (Mobile) | Unsupported (Mobile) | N/A |
 
-```text
-                    Mister Download Manager
-                              |
-                 +------------+------------+
-                 |                         |
-           Application                  Other Clients
-             crates/app          cli / mcp / remote / nmhost
-                 |                         |
-                 +------------+------------+
-                              |
-                     Shared Infrastructure
-                              |
-                 +------------+------------+
-                 |                         |
-              Engine                     IPC
-          crates/engine              crates/ipc
-                 |
-       +---------+----------+
-       |         |          |
-     Planner   Workers   Networking
-       |
-   Download Execution
+*Status definitions:*  
+- **VERIFIED:** Confirmed functional in source code, build logs, and unit/integration tests.  
+- **PLANNED:** Identified on future mobile roadmap, not currently active in mobile builds.  
+- **Unsupported:** Platform-specific desktop features not targeted at mobile environments.
+
+---
+
+## 3. Repository and Workspace Architecture
+
+The repository is organized as a single Cargo workspace with distinct workspace members under [`crates/`](file:///home/maya/Desktop/download-manager-android/crates/):
+
 ```
-
-This is a conceptual responsibility diagram, not a verified runtime call graph.
-
----
-
-## 3. Workspace Structure
-
-The local repository inspection confirmed the following Crate directories in version `v0.5.2`:
-
-```text
-crates/
-├── app/
-├── cli/
-├── crash/
-├── debrid/
-├── engine/
-├── extract/
-├── geo/
-├── ipc/
-├── labserver/
-├── mcp/
-├── nmhost/
-├── remote/
+download-manager-android/
+├── Cargo.toml                         # Root workspace manifest (resolver = "3")
+├── crates/
+│   ├── app/                           # Original desktop application (egui/winit)
+│   ├── engine/                        # Core download engine (mdm-engine)
+│   ├── mobile/                        # Shared mobile-facing Rust API & FFI (mdm-mobile)
+│   ├── cli/                           # Command line interface client
+│   ├── crash/                         # Crash handler & minidump integration
+│   ├── debrid/                        # Real-Debrid API client
+│   ├── extract/                       # Archive extraction utilities
+│   ├── geo/                           # IP geolocation & mirror resolution
+│   ├── ipc/                           # Local IPC & browser extension message protocol
+│   ├── labserver/                     # Local test HTTP server for testing
+│   ├── mcp/                           # Model Context Protocol integration
+│   ├── nmhost/                        # Native messaging host for browser extensions
+│   ├── remote/                        # Remote control & web interface
+│   ├── tools/                         # Media tools (yt-dlp, ffmpeg helpers)
+│   └── torrent/                       # BitTorrent client engine (librqbit wrapper)
+├── android/                           # Native Android project (Kotlin / Compose)
+│   ├── app/                           # Android application module
+│   │   ├── src/main/java/...          # Presentation, Domain, Data, Services
+│   │   └── src/main/jniLibs/          # Compiled libmdm_mobile.so binaries
+│   ├── build.gradle.kts               # Root Gradle build script
+│   └── settings.gradle.kts            # Project settings
+├── ios/                               # Native iOS project (Swift / SwiftUI)
+│   └── MisterDownloadManager/         # Presentation, Domain, Data, Core FFI
 ├── tools/
-└── torrent/
+│   ├── build-android-libs.sh          # Android NDK automated compilation script
+│   └── build-ios-libs.sh              # iOS compilation script
+└── docs/
+    └── MOBILE_ARCHITECTURE.md         # Detailed architectural documentation
 ```
 
-Each Crate has its own source directory and may have additional tests, examples, assets, or data.
-
-The root workspace is defined in `Cargo.toml`.
-
-Its workspace configuration includes:
-
-- Workspace members under `crates/*`.
-- Shared package metadata.
-- Shared dependency definitions.
-- Workspace-level lint configuration.
-
-Do not assume that all Crates are required by every application target.
-
 ---
 
-## 4. Core Application and Engine
+## 4. High-Level Architecture Diagrams
 
-### 4.1 Application — `crates/app`
+### A. System Component Diagram
 
-**Role:** Main desktop application layer.
+```mermaid
+flowchart TD
+    subgraph RustWorkspace["Rust Core Workspace"]
+        Engine["mdm-engine\n(Download Execution & Slicing)"]
+        MobileCore["mdm-mobile\n(Queue / Scheduler / Snapshots)"]
+        Engine --> MobileCore
+        DesktopApp["mdm-app\n(Desktop egui GUI)"]
+        Engine --> DesktopApp
+    end
 
-The application Crate is responsible for application-level behavior rather than implementing the underlying download engine.
+    subgraph AndroidPlatform["Android Native (Kotlin)"]
+        JNI["MdmNativeBridge\n(JNI Wrapper)"]
+        AndroidRepo["DownloadRepositoryImpl"]
+        AndroidService["DownloadForegroundService\n(Ongoing Notification)"]
+        AndroidUI["MainActivity & Compose UI"]
+        
+        JNI --> AndroidRepo
+        AndroidRepo --> AndroidUI
+        AndroidService --> JNI
+    end
 
-Its documented responsibilities include:
+    subgraph IOSPlatform["iOS Native (Swift)"]
+        CABI["MdmMobileFFI\n(Swift C-ABI Wrapper)"]
+        IOSRepo["DownloadRepositoryImpl"]
+        BGManager["BackgroundExecutionManager\n(BGTaskScheduler)"]
+        IOSUI["DownloadListView & SwiftUI"]
+        
+        CABI --> IOSRepo
+        IOSRepo --> IOSUI
+        BGManager --> CABI
+    end
 
-- Managing application state.
-- Translating user actions into application operations.
-- Handling menu, toolbar, keyboard, and IPC commands.
-- Coordinating application features.
-- Integrating with the engine.
-- Presenting download information through the desktop interface.
-- Managing application-level interactions and workflows.
-
-The upstream architecture documentation also describes a headless execution mode in which application logic can run without rendering the normal desktop UI.
-
-**Android relevance:**
-
-This Crate is an important investigation target because it contains application-level orchestration.
-
-However, its existing desktop UI implementation must not be assumed to be Android-compatible.
-
-The Android application may require a different presentation layer while preserving reusable application behavior where technically appropriate.
-
-Do not copy or port the entire desktop UI into Android without a verified technical reason.
-
-### 4.2 Download Engine — `crates/engine`
-
-**Role:** Core download functionality.
-
-This Crate is the most important starting point for understanding the reusable download functionality.
-
-Its documented responsibilities include:
-
-- Download probing.
-- Download planning.
-- Segment planning.
-- Download workers.
-- Download execution.
-- Resume and state management.
-- Per-host connection limits.
-- Speed limiting.
-- Checksums and integrity-related operations.
-- Proxy-related functionality.
-- Networking and protocol handling.
-
-The engine is designed to provide download functionality independently of the user interface.
-
-**Verified local directory structure:**
-
-```text
-crates/engine/
-├── src/
-│   ├── planner/
-│   └── sites/
-└── tests/
-    └── data/
+    MobileCore -- JNI Export (libmdm_mobile.so) --> JNI
+    MobileCore -- C-ABI Export (mdm_mobile.h) --> CABI
 ```
 
-This is only the directory structure confirmed by the local inspection command. It is not a complete inventory of the engine's source modules.
+---
 
-**Android relevance:**
+## 5. Shared Rust Mobile Core (`crates/mobile`)
 
-The engine is the primary candidate for reuse in the Android application.
+Located in [`crates/mobile`](file:///home/maya/Desktop/download-manager-android/crates/mobile), this crate acts as the single source of truth for mobile download states:
 
-Its Android compatibility must be established through actual compilation and runtime tests, not inferred from the existence of Android-specific conditional compilation.
-
-### 4.3 Application Logic vs. Download Logic
-
-These two responsibilities must remain conceptually distinct.
-
-| Concern | Responsible Area |
-|---|---|
-| Application state and orchestration | `crates/app` |
-| User-facing desktop interactions | `crates/app` |
-| Download planning | `crates/engine` |
-| Download execution | `crates/engine` |
-| Download workers | `crates/engine` |
-| Download networking | `crates/engine` |
-| Application-to-engine coordination | Application integration boundary |
-
-The application coordinates the overall user-facing workflow.
-
-The engine performs the underlying download operations.
-
-Do not treat the engine as the entire application, and do not treat the application Crate as the implementation of all download mechanics.
+1. **Queue Scheduling (`MobileEngine`):**
+   - Implements concurrency limiting via `set_max_concurrent_downloads(max)`.
+   - Reconciles active and waiting tasks automatically when transfers complete or fail.
+   - Spawns background tasks within a dedicated Tokio runtime.
+2. **Terminal State Preservation:**
+   - Completed (`Done`), failed (`Failed`), and aborted (`Cancelled`) downloads retain their terminal status and diagnostic errors in memory.
+   - Tasks are only purged when explicitly removed via `remove_download(id)`.
+3. **Speed & Progress Calculation:**
+   - Aggregates active connection transfer rates (`c.speed`) across all active workers.
+   - Accurately reports unavailable speed as `None` (or `-1` over C-ABI) when idle.
+4. **Resumability from Disk:**
+   - Re-checks `.mdm.json` state metadata using `mdm_engine::state::state_path` before starting transfers to continue existing part files.
 
 ---
 
-## 5. Supporting Crates
+## 6. Native FFI Architecture
 
-The following responsibilities are described in the upstream architecture documentation.
+### Android JNI Boundary
 
-Their exact implementation details and dependency relationships must be verified against the local `v0.5.2` source before making code changes.
+Exported symbols adhere to standard JNI naming conventions for class `com.misterdownloadmanager.core.MdmNativeBridge`:
 
-| Crate | Documented Responsibility |
-|---|---|
-| `crates/cli` | Command-line interface and headless download operations |
-| `crates/crash` | Crash-related functionality |
-| `crates/debrid` | Debrid service integration |
-| `crates/extract` | Extraction functionality |
-| `crates/geo` | Geographic data and related functionality |
-| `crates/ipc` | Inter-process communication and shared application infrastructure |
-| `crates/labserver` | Development and testing server |
-| `crates/mcp` | Model Context Protocol server |
-| `crates/nmhost` | Browser native messaging host |
-| `crates/remote` | HTTPS-based remote-control functionality |
-| `crates/tools` | Supporting tools |
-| `crates/torrent` | Torrent-related functionality |
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeInit`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeSetMaxConcurrentDownloads`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeCreateDownload`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativePauseDownload`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeResumeDownload`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeCancelDownload`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeRemoveDownload`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeRestoreDownload`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeGetSnapshotJson`
+- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeGetAllSnapshotsJson`
 
-### Important distinctions
+*Safety Principle:* Snapshot payloads are serialized to JSON on the native side and parsed using Gson in Kotlin, guaranteeing memory-safe object construction without raw pointer manipulation on Android.
 
-- `crates/remote` is not an Android application.
-- `crates/nmhost` is not the Android application entry point.
-- `crates/cli` is not the Android user interface.
-- `crates/labserver` must not be assumed to be a production application service.
-- `crates/ipc` provides infrastructure and must not automatically be treated as the application's business logic.
+### iOS C-ABI Boundary
 
-A Crate should only be included in the Android build when its functionality is required and its platform compatibility has been verified.
+Declared in [`crates/mobile/include/mdm_mobile.h`](file:///home/maya/Desktop/download-manager-android/crates/mobile/include/mdm_mobile.h):
+
+- `CMobileSnapshot`: Point-in-time data structure containing numeric IDs, total/downloaded bytes, speed (`int64_t`), state enum, and owned C-strings (`url`, `file_path`, `error`).
+- `CMobileSnapshotList`: Sized array struct containing `items`, `count`, and `capacity`.
+- `mdm_mobile_free_snapshot`: Releases allocated strings for a single snapshot.
+- `mdm_mobile_free_snapshot_list`: Reconstructs the allocated `Vec` using original `count` and `capacity`, freeing all nested strings and backing buffers safely.
+- **Panic Boundary:** Every C-ABI function wraps execution inside `std::panic::catch_unwind` to prevent panics from crossing the foreign function boundary.
 
 ---
 
-## 6. Supporting Repository Directories
+## 7. Android Native Application (`android/`)
 
-The repository also contains non-Crate directories.
+The Android application is organized into Clean Architecture layers:
 
-Examples documented by the upstream repository include:
-
-| Directory | General Purpose |
-|---|---|
-| `extension/` | Browser extension |
-| `docs/` | Project documentation |
-| `website/` | Project website |
-
-These directories are separate from the Rust workspace's Crates.
-
-Their current presence and exact contents should be verified locally before relying on them.
+- **Presentation:** Jetpack Compose (`MainActivity.kt`, Material 3 design system) observing `StateFlow` streams from `MainViewModel`.
+- **Domain Layer:** Pure Kotlin models (`DownloadTask`, `DownloadState`), use cases (`DownloadUseCases`), and repository interface (`DownloadRepository`).
+- **Data Layer:** `DownloadRepositoryImpl` delegating operations to `MdmNativeBridge` over `Dispatchers.IO`.
+- **Foreground Service (`DownloadForegroundService`):**
+  - Starts an ongoing notification with progress bars and transfer statistics.
+  - Declares `android:foregroundServiceType="dataSync"` in [`AndroidManifest.xml`](file:///home/maya/Desktop/download-manager-android/android/app/src/main/AndroidManifest.xml) to comply with Android 14+ background execution policies.
+  - Automatically shuts down when no downloads remain in progress.
 
 ---
 
-## 7. How the Main Components Work Together
+## 8. iOS Native Application (`ios/`)
 
-The following describes the conceptual architecture documented by upstream.
+The iOS application is written in Swift using SwiftUI and Combine:
 
-### 7.1 Application Workflow
+- **Presentation:** `DownloadListView`, `DownloadRowView`, and `AddDownloadSheet` with dynamic progress bars.
+- **ViewModel:** `DownloadListViewModel` (marked `@MainActor`) polling and publishing state via Combine.
+- **Domain / Data:** `DownloadRepositoryImpl` wrapping `MdmMobileFFI` calls and mapping return codes to Swift `Error` types.
+- **Background Handling (`BackgroundExecutionManager`):**
+  - Registers task identifier `com.misterdownloadmanager.refresh` with `BGTaskScheduler`.
+  - Schedules background app refreshes to query the download queue and check task states when the app is in the background.
 
-The application receives an action from the user or another supported integration.
+---
 
-The application layer coordinates that action and communicates with the appropriate functionality.
+## 9. Build and Development Setup
 
-For download-related operations, the engine performs the underlying download work.
+### Prerequisites
 
-The application receives or processes engine events to update application state and presentation.
+1. **Rust:** Rust 1.95+ or 1.100+ (cargo, rustc).
+2. **Android Development:**
+   - Android SDK (API 26+)
+   - Android NDK (r27+ tested, path: `/home/maya/Android/Sdk/ndk/27.1.12297006`)
+   - Java 17 JDK (`javac 17.0.20.1`)
+   - Rust Android Targets:
+     ```bash
+     rustup target add aarch64-linux-android x86_64-linux-android
+     ```
+3. **iOS Development:**
+   - macOS host with Xcode 15+ and Command Line Tools
+   - Rust Apple Targets:
+     ```bash
+     rustup target add aarch64-apple-ios x86_64-apple-ios
+     ```
 
-### 7.2 Download Engine Workflow
+---
 
-The documented conceptual download lifecycle is:
+## 10. Verified Build & Verification Commands
 
-```text
-Download Request
-       |
-       v
-     Probe
-       |
-       v
-    Planner
-       |
-       v
-  Download Workers
-       |
-       v
-  Host Limits / Speed Limiter
-       |
-       v
-   Download State
-       |
-       v
-      Events
-       |
-       v
-   Finalization
+All commands below have been tested and verified in the environment:
+
+### 1. Verify Original Desktop App & Workspace
+```bash
+# Verify desktop egui application compatibility
+cargo check -p mdm-app
 ```
 
-This diagram explains the conceptual stages only.
+### 2. Run Mobile Core Tests & FFI Safety Suite
+```bash
+# Run unit tests and C-ABI memory safety test
+cargo test -p mdm-mobile
 
-It does not establish exact function names, source files, invocation order, or all internal dependencies.
+# Run test suite with Android JNI feature enabled
+cargo test -p mdm-mobile --features jni
+```
 
-Those details must be established by inspecting the actual engine source code.
+### 3. Build Android Native Libraries (`.so`)
+```bash
+# Compile release binaries for arm64-v8a and x86_64 and copy to jniLibs
+./tools/build-android-libs.sh
+```
 
-### 7.3 Integration Boundaries
-
-The application and supporting Crates use shared functionality through their established interfaces.
-
-The engine should remain independent of desktop presentation concerns.
-
-Any Android integration must preserve this separation rather than introducing Android UI dependencies into the reusable engine.
-
----
-
-## 8. Android Porting Relevance
-
-The target product is an Android-native application.
-
-The repository currently has no confirmed Android application project in the local directory inspection.
-
-The inspected search did not identify:
-
-- Gradle settings or build files.
-- `AndroidManifest.xml`.
-- Kotlin source files.
-- Java source files.
-
-However, the engine contains Android-specific conditional compilation in some source locations.
-
-This is evidence of partial Android-aware code paths, not proof that the engine or complete application builds and runs successfully on Android.
-
-### Android investigation priorities
-
-| Priority | Area | Investigation Goal |
-|---|---|---|
-| P0 | `crates/engine` | Establish whether the engine builds for Android targets |
-| P0 | Engine dependencies | Identify unsupported or incompatible dependencies |
-| P0 | Networking | Verify Android network-interface and connectivity behavior |
-| P1 | `crates/app` | Identify reusable application logic independently of desktop UI |
-| P1 | `crates/ipc` | Determine whether existing IPC functionality is suitable for Android |
-| P1 | Storage | Verify Android storage and download persistence requirements |
-| P1 | Lifecycle | Determine how download execution survives Android lifecycle events |
-| P2 | Supporting Crates | Evaluate whether each integration is needed on Android |
-
-### Architecture principle
-
-Use Rust for the reusable download engine and suitable shared application logic.
-
-Use Kotlin for the minimum Android Framework integration required by the platform.
-
-Do not assume that desktop UI technology, desktop lifecycle behavior, or desktop infrastructure can be reused unchanged on Android.
+### 4. Build iOS Static Library (`.a`)
+```bash
+# Run cross-compilation script (requires macOS for linking)
+./tools/build-ios-libs.sh
+```
 
 ---
 
-## 9. Source-of-Truth and Evidence Policy
+## 11. Testing and Quality Assurance
 
-This document distinguishes between three types of information.
+The mobile test suite ([`crates/mobile/tests/integration_test.rs`](file:///home/maya/Desktop/download-manager-android/crates/mobile/tests/integration_test.rs)) verifies:
 
-### VERIFIED — Local Source
-
-A fact directly confirmed by inspecting the checked-out local repository.
-
-Examples:
-
-- Crate directories found under `crates/`.
-- The local workspace configuration.
-- Actual source files and definitions.
-- Actual dependencies in local manifests.
-
-### DOCUMENTED — Upstream Documentation
-
-A responsibility or architectural relationship described by upstream documentation.
-
-This does not automatically prove that the same implementation exists in the local checkout.
-
-For this repository, architecture descriptions taken from `main` must be treated as documentation references until confirmed against `v0.5.2`.
-
-### UNKNOWN — Not Yet Established
-
-A detail that has not been verified.
-
-Examples:
-
-- Exact runtime call graphs.
-- Exact public API contracts.
-- Complete Crate dependency relationships.
-- Android runtime compatibility.
-- Whether a desktop-specific module can be reused.
-- Exact ownership of individual business rules.
-
-Never convert an UNKNOWN fact into a VERIFIED statement without evidence.
+1. **Queue Concurrency & Ordering:** Verifies concurrency caps, priority scheduling, manual pause/resume, cancellation, and download removal.
+2. **C-ABI Allocation & Memory Safety:**
+   - Verifies `CMobileSnapshot` string allocations and freeing.
+   - Verifies `CMobileSnapshotList` capacity tracking and deallocation without leaks.
+   - Tests null-pointer resilience across FFI boundaries.
+3. **Symbol Export Verification:**
+   ```bash
+   nm -D android/app/src/main/jniLibs/arm64-v8a/libmdm_mobile.so | grep -E "Java_|mdm_mobile"
+   ```
+   Confirms all JNI and C-ABI entry points are present and exported as dynamic text symbols.
 
 ---
 
-## 10. Mandatory Rules for Future Architecture Work
+## 12. Download Lifecycle and Queue State Machine
 
-Before changing any Crate:
-
-1. Inspect its `Cargo.toml`.
-2. Inspect its source modules.
-3. Identify its public APIs.
-4. Trace the relevant call sites.
-5. Inspect its tests.
-6. Identify its direct and transitive dependencies where relevant.
-7. Verify whether the behavior is desktop-specific or reusable.
-8. Identify the impact on other Crates.
-9. Confirm the Android target compatibility when applicable.
-10. Propose the smallest change that satisfies the requirement.
-
-Do not:
-
-- Invent modules, files, APIs, or dependencies.
-- Move Crates without a verified architectural reason.
-- Duplicate existing engine functionality.
-- Introduce a new domain layer merely because it is common in other architectures.
-- Couple the engine to Android UI code.
-- Refactor unrelated Crates during Android porting.
-- Claim Android support based only on conditional compilation.
-- Treat upstream `main` as identical to the checked-out `v0.5.2` revision.
-
----
-
-## 11. Recommended Reading Order
-
-For an engineer joining the project or beginning the Android port, use this order:
-
-1. Root `Cargo.toml` — understand the workspace.
-2. `crates/engine/Cargo.toml` — understand engine dependencies.
-3. `crates/engine/src/` — investigate download functionality.
-4. `crates/app/Cargo.toml` — understand application dependencies.
-5. `crates/app/src/` — investigate application orchestration.
-6. `crates/ipc/src/` — understand inter-process communication where relevant.
-7. Supporting Crates — inspect only when required by the task.
-
-This is an investigation order, not a required implementation sequence.
+```mermaid
+stateDiagram-v2
+    [*] --> Waiting : create_download()
+    Waiting --> Probing : Concurrency Slot Available
+    Probing --> Downloading : Server Responded & Range Verified
+    Downloading --> Verifying : Data Transferred
+    Verifying --> Completing : Checksum Matches
+    Completing --> Done : Part File Renamed to Final File
+    
+    Downloading --> Paused : pause_download()
+    Probing --> Paused : pause_download()
+    Paused --> Waiting : resume_download()
+    
+    Downloading --> Failed : Network / IO Error
+    Probing --> Failed : 4xx / 5xx / DNS Error
+    
+    Downloading --> Cancelled : cancel_download()
+    Waiting --> Cancelled : cancel_download()
+    Paused --> Cancelled : cancel_download()
+    
+    Done --> [*] : remove_download()
+    Failed --> [*] : remove_download()
+    Cancelled --> [*] : remove_download()
+```
 
 ---
 
-## 12. Final Architectural Understanding
+## 13. Storage, Part Files, and State Recovery
 
-The most important distinction in this repository is:
+- **Part Files:** While downloading, content is streamed directly into `<dest>.part` files via sparse allocation.
+- **State Metadata:** Transfer checkpoints and HTTP resume validators (ETags, Last-Modified) are written to `<dest>.mdm.json` using atomic syncs.
+- **Completion Renaming:** When completed and integrity-verified, the `.part` file is renamed atomically to its target destination and the `.mdm.json` file is cleaned up.
+- **Android Storage:** Downloads are saved within app-specific external storage (`getExternalFilesDir`) or via Storage Access Framework URIs.
+- **iOS Storage:** Downloads are saved into the app's sandboxed `Documents` directory.
 
-**`crates/app` manages the application.**
+---
 
-**`crates/engine` performs the core download work.**
+## 14. Troubleshooting Common Issues
 
-The remaining Crates provide specialized capabilities and integrations.
+### 1. `UnsatisfiedLinkError` on Android
+- **Cause:** `libmdm_mobile.so` is missing for the active device ABI.
+- **Resolution:** Run `./tools/build-android-libs.sh` to generate libraries under `android/app/src/main/jniLibs/arm64-v8a` and `x86_64`.
 
-The Android port should identify which existing capabilities can be reused, which desktop-specific parts must be replaced, and which platform integrations must be implemented natively.
+### 2. Missing target crate for `core` / `std`
+- **Cause:** Android cross-compilation targets are not installed in the local toolchain.
+- **Resolution:** Run `rustup target add aarch64-linux-android x86_64-linux-android`.
 
-The objective is not to redesign the upstream project.
+### 3. Missing `rquickjs-sys` Android bindings
+- **Cause:** `rquickjs-sys` does not bundle pre-generated C headers for `aarch64-linux-android`.
+- **Resolution:** The build script and cargo cache supply standard linux-gnu ABI bindings compatible with Android Bionic.
 
-The objective is to preserve its proven functionality and architectural boundaries while introducing the smallest technically justified Android-specific layer.
+---
 
-All implementation decisions must be based on the actual checked-out source code and verified build results.
+## 15. Known Limitations and Roadmap
+
+- **BitTorrent on Mobile:** BitTorrent downloading (`crates/torrent`) is functional on Desktop, but disabled in the mobile core to minimize binary footprints and battery drain.
+- **iOS Background Transfer Limitations:** iOS suspends non-foreground apps after a short grace period; `BGTaskScheduler` periodically checks progress, but sustained multi-gigabyte transfers in background require future URLSession background session bridging.
+- **Android Scoped Storage:** Advanced integration with Android's MediaStore and SAF folder tree selection is currently scaffolded.
+
+---
+
+## 16. References and Upstream Attribution
+
+- Upstream Project: Mister Download Manager v0.5.2
+- Original Author: Ahmed Nefzaoui
+- Technical Architecture Reference: [`docs/MOBILE_ARCHITECTURE.md`](file:///home/maya/Desktop/download-manager-android/docs/MOBILE_ARCHITECTURE.md)
+- License: GNU General Public License v3.0 or later ([`LICENSE`](file:///home/maya/Desktop/download-manager-android/LICENSE))

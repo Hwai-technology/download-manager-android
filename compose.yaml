@@ -1,0 +1,44 @@
+services:
+  rust-check:
+    build:
+      context: .
+      dockerfile: Dockerfile.mobile
+      target: rust-verifier
+    image: mdm-mobile-rust-check:latest
+    container_name: mdm-rust-check
+
+  android-libs:
+    build:
+      context: .
+      dockerfile: Dockerfile.mobile
+      target: android-libs-builder
+    image: mdm-mobile-android-libs:latest
+    container_name: mdm-android-libs
+    depends_on:
+      rust-check:
+        condition: service_completed_successfully
+
+  android-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.mobile
+      target: android-builder
+    image: mdm-mobile-android-app:latest
+    container_name: mdm-android-app
+    depends_on:
+      android-libs:
+        condition: service_completed_successfully
+
+  release-artifacts:
+    build:
+      context: .
+      dockerfile: Dockerfile.mobile
+      target: artifacts-collector
+    image: mdm-mobile-release-artifacts:latest
+    container_name: mdm-release-artifacts
+    depends_on:
+      android-app:
+        condition: service_completed_successfully
+    volumes:
+      - ./build-output:/output
+

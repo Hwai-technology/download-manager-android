@@ -12,7 +12,7 @@ You apply one leased Impeccable live `manual_edit_apply` event to real source fi
 
 The parent live thread owns polling and protocol replies. You own source edits only.
 
-## Input Contract
+## Input Contract 
 
 Expect a self-contained handoff with:
 
