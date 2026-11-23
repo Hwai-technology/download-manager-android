@@ -344,6 +344,41 @@ pub mod jni_bridge {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeInitTls(
+        raw_env: *mut std::ffi::c_void,
+        _class: jni::sys::jobject,
+        context: jni::sys::jobject,
+    ) -> jint {
+        #[cfg(target_os = "android")]
+        {
+            let result = std::panic::catch_unwind(|| {
+                if raw_env.is_null() || context.is_null() {
+                    return -1;
+                }
+                let mut unowned = unsafe {
+                    jni_022::EnvUnowned::from_raw(raw_env as *mut jni_022::sys::JNIEnv)
+                };
+                let outcome = unowned.with_env(|env| {
+                    let jobj = unsafe {
+                        jni_022::objects::JObject::from_raw(env, context as jni_022::sys::jobject)
+                    };
+                    rustls_platform_verifier::android::init_with_env(env, jobj)
+                });
+                match outcome.into_outcome() {
+                    jni_022::Outcome::Ok(()) => 0,
+                    _ => -2,
+                }
+            });
+            result.unwrap_or(-3)
+        }
+        #[cfg(not(target_os = "android"))]
+        {
+            let _ = (raw_env, _class, context);
+            0
+        }
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeSetPersistenceDir(
         mut env: JNIEnv,
         _class: JClass,

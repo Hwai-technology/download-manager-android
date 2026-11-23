@@ -14,6 +14,11 @@ enum class DownloadState(val code: Int) {
     companion object {
         fun fromCode(code: Int): DownloadState =
             entries.firstOrNull { it.code == code } ?: WAITING
+
+        fun fromString(name: String?): DownloadState {
+            if (name == null) return WAITING
+            return entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: WAITING
+        }
     }
 }
 

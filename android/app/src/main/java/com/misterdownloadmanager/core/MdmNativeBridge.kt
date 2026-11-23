@@ -20,10 +20,14 @@ object MdmNativeBridge {
         }
     }
 
-    fun initialize(persistenceDir: String? = null) {
+    fun initialize(context: android.content.Context? = null, persistenceDir: String? = null) {
         if (isLoaded) {
             try {
                 nativeInit()
+                if (context != null) {
+                    val tlsRes = nativeInitTls(context.applicationContext)
+                    Log.i(TAG, "Native TLS verifier initialized with result: $tlsRes")
+                }
                 if (persistenceDir != null) {
                     nativeSetPersistenceDir(persistenceDir)
                     val count = nativeRestoreFromDisk()
@@ -113,27 +117,39 @@ object MdmNativeBridge {
         @SerializedName("id") val id: Long,
         @SerializedName("url") val url: String,
         @SerializedName("file_path") val filePath: String?,
-        @SerializedName("state") val stateCode: Int,
+        @SerializedName("state") val stateRaw: com.google.gson.JsonElement?,
         @SerializedName("total_bytes") val totalBytes: Long?,
         @SerializedName("downloaded_bytes") val downloadedBytes: Long,
         @SerializedName("speed_bytes_per_sec") val speed: Long?,
         @SerializedName("error") val error: String?,
         @SerializedName("resumable") val resumable: Boolean
     ) {
-        fun toDomain(): DownloadTask = DownloadTask(
-            id = id,
-            url = url,
-            filePath = filePath,
-            state = DownloadState.fromCode(stateCode),
-            totalBytes = totalBytes,
-            downloadedBytes = downloadedBytes,
-            speedBytesPerSec = speed,
-            error = error,
-            isResumable = resumable
-        )
+        fun toDomain(): DownloadTask {
+            val resolvedState = when {
+                stateRaw == null || stateRaw.isJsonNull -> DownloadState.WAITING
+                stateRaw.isJsonPrimitive && stateRaw.asJsonPrimitive.isNumber ->
+                    DownloadState.fromCode(stateRaw.asInt)
+                stateRaw.isJsonPrimitive && stateRaw.asJsonPrimitive.isString ->
+                    DownloadState.fromString(stateRaw.asString)
+                else -> DownloadState.WAITING
+            }
+
+            return DownloadTask(
+                id = id,
+                url = url,
+                filePath = filePath,
+                state = resolvedState,
+                totalBytes = totalBytes,
+                downloadedBytes = downloadedBytes,
+                speedBytesPerSec = speed,
+                error = error,
+                isResumable = resumable
+            )
+        }
     }
 
     private external fun nativeInit()
+    private external fun nativeInitTls(context: android.content.Context): Int
     private external fun nativeSetPersistenceDir(dir: String): Int
     private external fun nativeRestoreFromDisk(): Int
     private external fun nativeSetMaxConcurrentDownloads(max: Int)

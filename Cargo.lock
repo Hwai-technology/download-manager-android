@@ -4694,10 +4694,12 @@ name = "mdm-mobile"
 version = "0.5.2"
 dependencies = [
  "jni 0.21.1",
+ "jni 0.22.4",
  "libc",
  "mdm-engine",
  "parking_lot",
  "reqwest 0.13.5",
+ "rustls-platform-verifier",
  "serde",
  "serde_json",
  "tempfile",

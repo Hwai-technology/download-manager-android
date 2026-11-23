@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "/home/maya/.gradle/daemon/8.11.1/com.misterdownloadmanager.app-debug-49:/xml_file_paths.xml.flat",
+        "source": "/home/maya/.gradle/daemon/8.11.1/com.misterdownloadmanager.app-main-51:/xml/file_paths.xml"
+    },
+    {
+        "merged": "com.misterdownloadmanager.app-debug-49:/xml_file_paths.xml.flat",
+        "source": "com.misterdownloadmanager.app-main-51:/xml/file_paths.xml"
+    }
+]

@@ -24,3 +24,9 @@ node_modules/
 /.claude/worktrees/
 # Keys (API keys, signing keys): never committed.
 /k/
+
+# Build outputs
+**/build/
+**/target/
+*.apk
+*.aab

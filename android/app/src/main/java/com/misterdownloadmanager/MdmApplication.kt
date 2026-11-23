@@ -8,6 +8,6 @@ class MdmApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         val metaDir = File(filesDir, "mdm_state").apply { mkdirs() }.absolutePath
-        MdmNativeBridge.initialize(persistenceDir = metaDir)
+        MdmNativeBridge.initialize(context = this, persistenceDir = metaDir)
     }
 }

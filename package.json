@@ -1,0 +1,21 @@
+{
+  "name": "download-manager-android",
+  "version": "0.5.2",
+  "description": "Mister Download Manager - Native Mobile (Android & iOS)",
+  "scripts": {
+    "apk": "bash tools/build-local-apk.sh",
+    "build:android": "bash tools/build-local-apk.sh",
+    "build:libs": "bash tools/build-android-libs.sh",
+    "docker:build": "docker compose up --build"
+  },
+  "keywords": [
+    "download-manager",
+    "android",
+    "rust",
+    "kotlin",
+    "jetpack-compose"
+  ],
+  "author": "",
+  "license": "GPL-3.0-only"
+}
+

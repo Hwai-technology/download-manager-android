@@ -266,7 +266,89 @@ cargo test -p mdm-mobile --features jni
 ./tools/build-android-libs.sh
 ```
 
-### 4. Build iOS Static Library (`.a`)
+### 4. ## Build and Run Android APK Locally
+
+The Android application can be built locally without Docker or cloud services.
+
+### Prerequisites
+
+- Java JDK 17
+- Rust stable toolchain
+- Android SDK
+- Android NDK 27.1.12297006
+- Android Rust targets:
+  - `aarch64-linux-android`
+  - `x86_64-linux-android`
+- Node.js and npm
+
+### 1. Configure the environment
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-17-temurin-jdk
+export ANDROID_HOME=$HOME/Android/Sdk
+export ANDROID_SDK_ROOT=$ANDROID_HOME
+export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.1.12297006
+
+export PATH=$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+```
+
+### 2. Build native Rust libraries
+
+```bash
+npm run build:libs
+```
+
+This compiles the `mdm-mobile` Rust package with JNI support for:
+
+- `arm64-v8a`
+- `x86_64`
+
+### 3. Build the Android APK
+
+```bash
+npm run apk
+```
+
+The Debug APK is expected at:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+### 4. Install on an Android device
+
+Enable USB Debugging, connect the device, and check the connection:
+
+```bash
+adb devices
+```
+
+Install the APK:
+
+```bash
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+### 5. Launch and inspect the application
+
+Launch the application using its verified application ID and launcher Activity.
+
+View application logs:
+
+```bash
+adb logcat
+```
+
+Filter logs using the actual application logging tags.
+
+### Notes
+
+- The Android build uses the existing Rust engine through JNI.
+- Docker is not required for local APK builds.
+- iOS is outside the current Android-only project scope.
+- A successful APK compilation does not by itself verify runtime functionality.
+
+### 5. Build iOS Static Library (`.a`)
 ```bash
 # Run cross-compilation script (requires macOS for linking)
 ./tools/build-ios-libs.sh
