@@ -408,7 +408,6 @@ We express deep gratitude to everyone driving the engineering, mobile porting, a
 | Contributor | Role & Contributions | Profile |
 | :--- | :--- | :--- |
 | **Hwai Technology** | Project Organization & Ecosystem Lead | [@Hwai-technology](https://github.com/Hwai-technology) |
-| **Ahmed Nefzaoui** | Original Creator & Core Desktop Engine Architect | [@anefzaoui](https://github.com/anefzaoui) |
 | **Eng. Ahmet Asaad Hammoud** | Android Architecture, Rust Mobile Engine (`crates/mobile`), Jetpack Compose UI, CI/CD Pipelines & Security Hardening | [@Eng-Ahmet](https://github.com/Eng-Ahmet) |
 | **Eng. Maya** | Quality Assurance, Cross-platform Testing & Community Contributions | [@Eng-Maya](https://github.com/Eng-Maya) |
 
@@ -419,7 +418,5 @@ We express deep gratitude to everyone driving the engineering, mobile porting, a
 ## Attribution & License
 
 - **Repository:** [Hwai-technology/download-manager-android](https://github.com/Hwai-technology/download-manager-android)
-- **Upstream Project:** Mister Download Manager v0.5.2
-- **Original Author:** Ahmed Nefzaoui
 - **License:** [GNU General Public License v3.0 or later (GPL-3.0-or-later)](LICENSE)
 - **Technical Reference:** [Mobile Architecture Specification](docs/MOBILE_ARCHITECTURE.md)
