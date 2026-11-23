@@ -408,8 +408,8 @@ We express deep gratitude to everyone driving the engineering, mobile porting, a
 | Contributor | Role & Contributions | Profile |
 | :--- | :--- | :--- |
 | **Hwai Technology** | Project Organization & Ecosystem Lead | [@Hwai-technology](https://github.com/Hwai-technology) |
-| **Eng. Ahmet Asaad Hammoud** | Android Architecture, Rust Mobile Engine (`crates/mobile`), Jetpack Compose UI, CI/CD Pipelines & Security Hardening | [@Eng-Ahmet](https://github.com/Eng-Ahmet) |
-| **Eng. Maya** | Quality Assurance, Cross-platform Testing & Community Contributions | [@Eng-Maya](https://github.com/Eng-Maya) |
+| **Eng. Ahmet Asaad Hammoud** | Chief Software Architect & Lead Engineer (System Architecture, Rust Core Engine, Android Architecture, CI/CD, Security Hardening) | [@Eng-Ahmet](https://github.com/Eng-Ahmet) |
+| **Eng. Maya** | Core Logic Engineer & QA Specialist (Business Logic Implementation, Feature Workflows & Cross-platform Verification) | [@Eng-Maya](https://github.com/Eng-Maya) |
 
 *Want to contribute? Check out our [Contribution Guidelines](CONTRIBUTING.md) to get started!*
 
