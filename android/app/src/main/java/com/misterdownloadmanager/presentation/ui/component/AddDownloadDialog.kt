@@ -33,6 +33,11 @@ fun AddDownloadDialog(
         }
     }
 
+    val isYoutubePlaylist = remember(url) {
+        val u = url.lowercase()
+        (u.contains("youtube.com") || u.contains("youtu.be")) && (u.contains("playlist") || u.contains("list="))
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_new_download)) },
@@ -43,6 +48,7 @@ fun AddDownloadDialog(
                     onValueChange = { updateUrl(it) },
                     label = { Text(stringResource(R.string.dialog_url_label)) },
                     singleLine = true,
+                    isError = isYoutubePlaylist,
                     trailingIcon = {
                         IconButton(onClick = {
                             clipboardManager.getText()?.text?.let { clipText ->
@@ -54,6 +60,14 @@ fun AddDownloadDialog(
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (isYoutubePlaylist) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.dialog_youtube_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
                     value = fileName,

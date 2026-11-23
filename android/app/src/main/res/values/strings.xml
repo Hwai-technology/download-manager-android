@@ -53,6 +53,7 @@
     <string name="dialog_save_location">Saving to: Download/Mister Download Manager/</string>
     <string name="dialog_paste">Paste</string>
     <string name="dialog_start">Start Download</string>
+    <string name="dialog_youtube_warning">YouTube playlists cannot be downloaded as raw files. Direct video links or Desktop extraction are required.</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_confirm">Confirm</string>
 

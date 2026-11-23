@@ -198,7 +198,7 @@ fun MainAppScaffold(
                         onViewAllClick = { currentTab = NavTab.DOWNLOADS },
                         onPlayOrOpen = { task ->
                             task.filePath?.let { path ->
-                                val res = FileUtils.openFile(context, path)
+                                val res = FileUtils.openFileOrFolder(context, path)
                                 res.onFailure {
                                     Toast.makeText(context, "Cannot open: ${it.localizedMessage}", Toast.LENGTH_SHORT).show()
                                 }
@@ -219,7 +219,7 @@ fun MainAppScaffold(
                         downloads = downloads,
                         onPlayOrOpen = { task ->
                             task.filePath?.let { path ->
-                                val res = FileUtils.openFile(context, path)
+                                val res = FileUtils.openFileOrFolder(context, path)
                                 res.onFailure {
                                     Toast.makeText(context, "Cannot open: ${it.localizedMessage}", Toast.LENGTH_SHORT).show()
                                 }

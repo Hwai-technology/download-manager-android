@@ -53,6 +53,7 @@
     <string name="dialog_save_location">مجلد الحفظ: Download/Mister Download Manager/</string>
     <string name="dialog_paste">لصق</string>
     <string name="dialog_start">بدء التنزيل</string>
+    <string name="dialog_youtube_warning">لا يمكن تنزيل قوائم تشغيل YouTube كملفات عادية. يلزم رابط تنزيل مباشر أو استخدام نسخة الحاسوب للاستخراج.</string>
     <string name="dialog_cancel">إلغاء</string>
     <string name="dialog_confirm">تأكيد</string>
 

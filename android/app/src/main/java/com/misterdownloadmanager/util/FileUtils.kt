@@ -79,6 +79,34 @@ object FileUtils {
         }
     }
 
+    fun openFileOrFolder(context: Context, filePath: String): Result<Unit> {
+        return try {
+            val file = File(filePath)
+            if (!file.exists()) {
+                return Result.failure(IllegalStateException("File does not exist: $filePath"))
+            }
+
+            val parentDir = file.parentFile ?: file
+            val parentUri = Uri.parse(parentDir.absolutePath)
+
+            // Attempt to open the directory/folder in a File Manager application
+            val folderIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(Uri.fromFile(parentDir), "resource/folder")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            if (folderIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(folderIntent)
+                return Result.success(Unit)
+            }
+
+            // Fallback: Open file using FileProvider with its specific MIME type
+            openFile(context, filePath)
+        } catch (_: Exception) {
+            openFile(context, filePath)
+        }
+    }
+
     fun openFile(context: Context, filePath: String): Result<Unit> {
         return try {
             val file = File(filePath)
