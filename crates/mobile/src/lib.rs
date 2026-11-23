@@ -4,8 +4,8 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use mdm_engine::download::{Destination, Download, Options, Request, Snapshot, State};
 use mdm_engine::state::state_path;
@@ -144,11 +144,7 @@ impl MobileEngine {
         self.reconcile_queue();
     }
 
-    pub fn create_download(
-        &self,
-        url_str: &str,
-        dest_path: &str,
-    ) -> Result<u64, MobileError> {
+    pub fn create_download(&self, url_str: &str, dest_path: &str) -> Result<u64, MobileError> {
         let url = Url::parse(url_str).map_err(|e| MobileError::InvalidUrl(e.to_string()))?;
         let dest = PathBuf::from(dest_path);
 
@@ -254,30 +250,42 @@ impl MobileEngine {
         let dl_map = self.downloads.read();
         let entry = dl_map.get(&id).ok_or(MobileError::NotFound(id))?;
 
-        let (state, total, downloaded, speed, resumable, error) = if let Some(handle) = &entry.handle {
-            let s = handle.snapshot();
-            let total_speed: u64 = s.connections.iter().map(|c| c.speed).sum();
-            (
-                MobileDownloadState::from(s.state),
-                s.size,
-                s.downloaded,
-                Some(total_speed),
-                s.resumable.unwrap_or(true),
-                s.error,
-            )
-        } else if let Some(term) = entry.terminal_state {
-            let (total, down, res) = entry.last_snapshot.as_ref().map(|s| {
-                (s.size, s.downloaded, s.resumable.unwrap_or(true))
-            }).unwrap_or((None, entry.downloaded_checkpoint, true));
-            (term, total, down, None, res, entry.terminal_error.clone())
-        } else if entry.paused {
-            let (total, down, res) = entry.last_snapshot.as_ref().map(|s| {
-                (s.size, s.downloaded, s.resumable.unwrap_or(true))
-            }).unwrap_or((None, entry.downloaded_checkpoint, true));
-            (MobileDownloadState::Paused, total, down, None, res, None)
-        } else {
-            (MobileDownloadState::Waiting, None, entry.downloaded_checkpoint, None, true, None)
-        };
+        let (state, total, downloaded, speed, resumable, error) =
+            if let Some(handle) = &entry.handle {
+                let s = handle.snapshot();
+                let total_speed: u64 = s.connections.iter().map(|c| c.speed).sum();
+                (
+                    MobileDownloadState::from(s.state),
+                    s.size,
+                    s.downloaded,
+                    Some(total_speed),
+                    s.resumable.unwrap_or(true),
+                    s.error,
+                )
+            } else if let Some(term) = entry.terminal_state {
+                let (total, down, res) = entry
+                    .last_snapshot
+                    .as_ref()
+                    .map(|s| (s.size, s.downloaded, s.resumable.unwrap_or(true)))
+                    .unwrap_or((None, entry.downloaded_checkpoint, true));
+                (term, total, down, None, res, entry.terminal_error.clone())
+            } else if entry.paused {
+                let (total, down, res) = entry
+                    .last_snapshot
+                    .as_ref()
+                    .map(|s| (s.size, s.downloaded, s.resumable.unwrap_or(true)))
+                    .unwrap_or((None, entry.downloaded_checkpoint, true));
+                (MobileDownloadState::Paused, total, down, None, res, None)
+            } else {
+                (
+                    MobileDownloadState::Waiting,
+                    None,
+                    entry.downloaded_checkpoint,
+                    None,
+                    true,
+                    None,
+                )
+            };
 
         Ok(MobileDownloadSnapshot {
             id,
@@ -427,7 +435,10 @@ impl MobileEngine {
                     paused: entry.paused,
                     terminal_state: entry.terminal_state,
                     terminal_error: entry.terminal_error.clone(),
-                    downloaded: snap.as_ref().map(|s| s.downloaded_bytes).unwrap_or(entry.downloaded_checkpoint),
+                    downloaded: snap
+                        .as_ref()
+                        .map(|s| s.downloaded_bytes)
+                        .unwrap_or(entry.downloaded_checkpoint),
                     total: snap.and_then(|s| s.total_bytes),
                 });
             }
@@ -501,15 +512,19 @@ impl MobileEngine {
                     let s_file = state_path(&entry.dest);
                     let _guard = self.runtime.enter();
                     let handle = if s_file.exists() {
-                        Download::resume(s_file, reqwest::header::HeaderMap::new(), Options::default())
-                            .unwrap_or_else(|_| {
-                                let req = Request {
-                                    url: entry.url.clone(),
-                                    headers: reqwest::header::HeaderMap::new(),
-                                    dest: Destination::File(entry.dest.clone()),
-                                };
-                                Download::start(req, Options::default())
-                            })
+                        Download::resume(
+                            s_file,
+                            reqwest::header::HeaderMap::new(),
+                            Options::default(),
+                        )
+                        .unwrap_or_else(|_| {
+                            let req = Request {
+                                url: entry.url.clone(),
+                                headers: reqwest::header::HeaderMap::new(),
+                                dest: Destination::File(entry.dest.clone()),
+                            };
+                            Download::start(req, Options::default())
+                        })
                     } else {
                         let req = Request {
                             url: entry.url.clone(),

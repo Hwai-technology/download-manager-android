@@ -1,7 +1,7 @@
 use mdm_mobile::ffi::{
-    mdm_mobile_create_download, mdm_mobile_free_snapshot, mdm_mobile_free_snapshot_list,
-    mdm_mobile_get_all_snapshots, mdm_mobile_get_snapshot, mdm_mobile_init, CMobileSnapshot,
-    CMobileSnapshotList,
+    CMobileSnapshot, CMobileSnapshotList, mdm_mobile_create_download, mdm_mobile_free_snapshot,
+    mdm_mobile_free_snapshot_list, mdm_mobile_get_all_snapshots, mdm_mobile_get_snapshot,
+    mdm_mobile_init,
 };
 use mdm_mobile::{MobileDownloadState, MobileEngine};
 use tempfile::tempdir;
@@ -84,7 +84,10 @@ fn test_c_abi_ffi_and_memory_safety() {
     assert_eq!(list.capacity, 0);
 
     // Null safety test
-    assert_eq!(unsafe { mdm_mobile_create_download(std::ptr::null(), std::ptr::null()) }, -1);
+    assert_eq!(
+        unsafe { mdm_mobile_create_download(std::ptr::null(), std::ptr::null()) },
+        -1
+    );
     unsafe { mdm_mobile_free_snapshot(std::ptr::null_mut()) };
     unsafe { mdm_mobile_free_snapshot_list(std::ptr::null_mut()) };
 }

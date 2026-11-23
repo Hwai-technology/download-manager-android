@@ -2288,7 +2288,10 @@ mod host_copy_tests {
         std::fs::copy("/bin/sleep", &old).unwrap();
         let mut running = std::process::Command::new(&old).arg("30").spawn().unwrap();
         std::thread::sleep(std::time::Duration::from_millis(200));
-        assert!(running.try_wait().unwrap().is_none(), "the old copy ended early");
+        assert!(
+            running.try_wait().unwrap().is_none(),
+            "the old copy ended early"
+        );
         let from = program(t.path(), "new-host", "echo two");
         let copy = install_host_copy(&from, &dir, Path::new("/x.AppImage")).unwrap();
         assert_eq!(std::fs::read(&copy).unwrap(), std::fs::read(&from).unwrap());

@@ -1,7 +1,7 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use std::sync::atomic::{AtomicPtr, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicPtr, Ordering};
 
 use crate::{MobileDownloadSnapshot, MobileDownloadState, MobileEngine};
 
@@ -224,10 +224,7 @@ pub unsafe extern "C" fn mdm_mobile_restore_download(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mdm_mobile_get_snapshot(
-    id: u64,
-    out_snap: *mut CMobileSnapshot,
-) -> i32 {
+pub unsafe extern "C" fn mdm_mobile_get_snapshot(id: u64, out_snap: *mut CMobileSnapshot) -> i32 {
     if out_snap.is_null() {
         return -1;
     }
@@ -247,9 +244,7 @@ pub unsafe extern "C" fn mdm_mobile_get_snapshot(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mdm_mobile_get_all_snapshots(
-    out_list: *mut CMobileSnapshotList,
-) -> i32 {
+pub unsafe extern "C" fn mdm_mobile_get_all_snapshots(out_list: *mut CMobileSnapshotList) -> i32 {
     if out_list.is_null() {
         return -1;
     }
@@ -329,9 +324,9 @@ pub unsafe extern "C" fn mdm_mobile_free_snapshot_list(list: *mut CMobileSnapsho
 #[cfg(feature = "jni")]
 pub mod jni_bridge {
     use super::*;
+    use jni::JNIEnv;
     use jni::objects::{JClass, JString};
     use jni::sys::{jboolean, jint, jlong, jstring};
-    use jni::JNIEnv;
 
     #[unsafe(no_mangle)]
     pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeInit(
@@ -355,9 +350,8 @@ pub mod jni_bridge {
                 if raw_env.is_null() || context.is_null() {
                     return -1;
                 }
-                let mut unowned = unsafe {
-                    jni_022::EnvUnowned::from_raw(raw_env as *mut jni_022::sys::JNIEnv)
-                };
+                let mut unowned =
+                    unsafe { jni_022::EnvUnowned::from_raw(raw_env as *mut jni_022::sys::JNIEnv) };
                 let outcome = unowned.with_env(|env| {
                     let jobj = unsafe {
                         jni_022::objects::JObject::from_raw(env, context as jni_022::sys::jobject)
@@ -547,7 +541,9 @@ pub mod jni_bridge {
             match engine.get_snapshot(id as u64) {
                 Ok(snap) => {
                     let json = serde_json::to_string(&snap).unwrap_or_default();
-                    env.new_string(json).map(|s| s.into_raw()).unwrap_or(std::ptr::null_mut())
+                    env.new_string(json)
+                        .map(|s| s.into_raw())
+                        .unwrap_or(std::ptr::null_mut())
                 }
                 Err(_) => std::ptr::null_mut(),
             }
@@ -564,7 +560,9 @@ pub mod jni_bridge {
             let engine = get_or_init_engine();
             let list = engine.get_all_snapshots();
             let json = serde_json::to_string(&list).unwrap_or_default();
-            env.new_string(json).map(|s| s.into_raw()).unwrap_or(std::ptr::null_mut())
+            env.new_string(json)
+                .map(|s| s.into_raw())
+                .unwrap_or(std::ptr::null_mut())
         }));
         result.unwrap_or(std::ptr::null_mut())
     }

@@ -43,7 +43,10 @@ fn test_metadata_persistence_and_restore() {
 
     // Next ID should be > 2
     let id3 = engine2
-        .create_download("http://127.0.0.1:9/three.bin", dest_dir.join("file3.bin").to_str().unwrap())
+        .create_download(
+            "http://127.0.0.1:9/three.bin",
+            dest_dir.join("file3.bin").to_str().unwrap(),
+        )
         .expect("create id3");
     assert_eq!(id3, 3);
 }
