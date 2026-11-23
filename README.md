@@ -44,7 +44,8 @@ Built as a unified monorepo, MDM pairs a shared, memory-safe **Rust download eng
 9. [Contributing & Code Standards](#contributing--code-standards)
 10. [Download Lifecycle State Machine](#download-lifecycle-state-machine)
 11. [Troubleshooting](#troubleshooting)
-12. [Attribution & License](#attribution--license)
+12. [Contributors & Core Team](#contributors--core-team)
+13. [Attribution & License](#attribution--license)
 
 ---
 
@@ -400,8 +401,24 @@ stateDiagram-v2
 
 ---
 
+## Contributors & Core Team
+
+We express deep gratitude to everyone driving the engineering, mobile porting, and security audits of Mister Download Manager:
+
+| Contributor | Role & Contributions | Profile |
+| :--- | :--- | :--- |
+| **Hwai Technology** | Project Organization & Ecosystem Lead | [@Hwai-technology](https://github.com/Hwai-technology) |
+| **Ahmed Nefzaoui** | Original Creator & Core Desktop Engine Architect | [@anefzaoui](https://github.com/anefzaoui) |
+| **Eng. Ahmet Asaad Hammoud** | Android Architecture, Rust Mobile Engine (`crates/mobile`), Jetpack Compose UI, CI/CD Pipelines & Security Hardening | [@Eng-Ahmet](https://github.com/Eng-Ahmet) |
+| **Eng. Maya** | Quality Assurance, Cross-platform Testing & Community Contributions | [@Eng-Maya](https://github.com/Eng-Maya) |
+
+*Want to contribute? Check out our [Contribution Guidelines](CONTRIBUTING.md) to get started!*
+
+---
+
 ## Attribution & License
 
+- **Repository:** [Hwai-technology/download-manager-android](https://github.com/Hwai-technology/download-manager-android)
 - **Upstream Project:** Mister Download Manager v0.5.2
 - **Original Author:** Ahmed Nefzaoui
 - **License:** [GNU General Public License v3.0 or later (GPL-3.0-or-later)](LICENSE)

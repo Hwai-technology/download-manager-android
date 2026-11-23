@@ -88,8 +88,11 @@
     <string name="settings_notif_desc">Alert when downloads complete or fail</string>
     <string name="settings_section_about">About</string>
     <string name="settings_app_version">Version %1$s (Engine: Rust v%2$s)</string>
-    <string name="settings_license">Open-source Licenses</string>
-    <string name="settings_license_desc">Licensed under Apache 2.0 / MIT</string>
+    <string name="settings_license">Open-source License (GPLv3)</string>
+    <string name="settings_license_desc">GNU General Public License v3.0 (Tap to view)</string>
+    <string name="settings_github_repo">GitHub Repository</string>
+    <string name="settings_github_repo_desc">https://github.com/Hwai-technology/download-manager-android</string>
+    <string name="settings_close">Close</string>
 
     <!-- States -->
     <string name="state_waiting">Waiting</string>

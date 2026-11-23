@@ -88,8 +88,11 @@
     <string name="settings_notif_desc">تنبيه عند اكتمال أو تعثر التنزيلات</string>
     <string name="settings_section_about">حول التطبيق</string>
     <string name="settings_app_version">الإصدار %1$s (المحرك: Rust v%2$s)</string>
-    <string name="settings_license">التراخيص مفتوحة المصدر</string>
-    <string name="settings_license_desc">مرخّص بموجب Apache 2.0 / MIT</string>
+    <string name="settings_license">الرخصة مفتوحة المصدر (GPLv3)</string>
+    <string name="settings_license_desc">رخصة جنو العمومية الإصدار 3.0 (انقر للعرض)</string>
+    <string name="settings_github_repo">مستودع المشروع على GitHub</string>
+    <string name="settings_github_repo_desc">https://github.com/Hwai-technology/download-manager-android</string>
+    <string name="settings_close">إغلاق</string>
 
     <!-- States -->
     <string name="state_waiting">في الانتظار</string>

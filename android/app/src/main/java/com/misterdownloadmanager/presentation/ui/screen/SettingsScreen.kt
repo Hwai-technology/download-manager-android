@@ -1,19 +1,25 @@
 package com.misterdownloadmanager.presentation.ui.screen
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.misterdownloadmanager.R
@@ -28,6 +34,19 @@ fun SettingsScreen(
     onNotificationsToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    var showLicenseDialog by remember { mutableStateOf(false) }
+    var licenseText by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(showLicenseDialog) {
+        if (showLicenseDialog && licenseText == null) {
+            licenseText = try {
+                context.assets.open("LICENSE.txt").bufferedReader().use { it.readText() }
+            } catch (_: Exception) {
+                "GNU General Public License v3.0\nhttps://www.gnu.org/licenses/gpl-3.0.en.html"
+            }
+        }
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -150,7 +169,56 @@ fun SettingsScreen(
         SettingsItemCard(
             icon = Icons.Default.Code,
             title = stringResource(R.string.settings_license),
-            subtitle = stringResource(R.string.settings_license_desc)
+            subtitle = stringResource(R.string.settings_license_desc),
+            onClick = { showLicenseDialog = true }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingsItemCard(
+            icon = Icons.Default.Public,
+            title = stringResource(R.string.settings_github_repo),
+            subtitle = stringResource(R.string.settings_github_repo_desc),
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Hwai-technology/download-manager-android"))
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }
+        )
+    }
+
+    if (showLicenseDialog) {
+        AlertDialog(
+            onDismissRequest = { showLicenseDialog = false },
+            title = {
+                Text(
+                    text = stringResource(R.string.settings_license),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 380.dp)
+                        .verticalScroll(rememberScrollState())
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = licenseText ?: "Loading license text...",
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLicenseDialog = false }) {
+                    Text(stringResource(R.string.settings_close))
+                }
+            }
         )
     }
 }
@@ -170,10 +238,17 @@ fun SettingsItemCard(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val clickableModifier = if (onClick != null) {
+        modifier.clickable { onClick() }
+    } else {
+        modifier
+    }
+
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = clickableModifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
