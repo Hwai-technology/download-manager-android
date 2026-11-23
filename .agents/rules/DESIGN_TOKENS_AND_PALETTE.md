@@ -15,19 +15,19 @@ The visual identity is anchored by the **Globe Gentleman** mascot and orbit stre
 
 ## 2. Core Color Palette
 
-### Primary Colors (الألوان الأساسية)
+### Primary Colors (الألوان الأساسية المعتمدة)
 | Name | Hex Code | Compose / Token | Purpose |
 | :--- | :--- | :--- | :--- |
-| **MDM Electric Blue** | `#2563EB` / `#3B82F6` | `DarkPrimary` / `LightPrimary` | Primary brand actions, active buttons, title bar accents |
-| **MDM Vibrant Emerald** | `#10B981` / `#22C55E` | `StateDownloading` | Active download state, download progress indicators, success markers |
+| **MDM Brand Blue** | `#1F63D6` / `#1854BB` | `DarkPrimary` / `LightPrimary` | Primary brand actions, active buttons, title bar accents |
+| **MDM True Emerald** | `#22C55E` / `#10B981` | `StateDownloading` | Active download state, download progress indicators, success markers |
 
 ### Secondary & Accent Colors (الألوان الثانوية والمتناسقة)
 | Name | Hex Code | Compose / Token | Purpose |
 | :--- | :--- | :--- | :--- |
-| **MDM Speed Cyan** | `#06B6D4` / `#0284C7` | `DarkAccentCyan` / `LightAccentCyan` | Speedometer stats, network throughput charts, segment active blocks |
-| **MDM Royal Indigo** | `#6366F1` / `#4F46E5` | `DarkSecondary` / `LightSecondary` | Secondary chips, selection tags, subtle interactive highlights |
-| **MDM Orbit Lime** | `#84CC16` / `#A3E635` | `AccentLime` | Speed burst indicators, high-efficiency connection nodes |
-| **MDM Midnight Slate** | `#0A0F1D` / `#131B2E` | `DarkBackground` / `DarkSurface` | Main dark theme background, cards, and elevated surfaces |
+| **MDM Speed Cyan** | `#06B6D4` / `#0096C7` | `DarkAccentCyan` / `LightAccentCyan` | Speedometer stats, network throughput charts, segment active blocks |
+| **MDM Ocean Blue** | `#0284C7` / `#0369A1` | `DarkSecondary` / `LightSecondary` | Secondary chips, selection tags, subtle interactive highlights |
+| **MDM Orbit Lime** | `#84CC16` / `#65A30D` | `AccentLime` | Speed burst indicators, high-efficiency connection nodes |
+| **MDM Neutral Slate** | `#0B1120` / `#111C35` | `DarkBackground` / `DarkSurface` | Pure dark slate background, cards, and elevated surfaces (Zero purple tint) |
 
 ---
 
