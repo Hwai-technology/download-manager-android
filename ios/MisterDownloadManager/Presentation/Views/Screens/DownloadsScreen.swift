@@ -1,4 +1,5 @@
 import SwiftUI
+import QuickLook
 
 public enum StatusFilter: String, CaseIterable, Identifiable {
     case all = "All"
@@ -10,12 +11,14 @@ public enum StatusFilter: String, CaseIterable, Identifiable {
     public var id: String { rawValue }
 }
 
-public struct DownloadsView: View {
+public struct DownloadsScreen: View {
     @ObservedObject var viewModel: DownloadListViewModel
     @State private var selectedStatus: StatusFilter = .all
     @State private var searchQuery: String = ""
     @State private var showingAddSheet = false
     @State private var previewUrl: URL?
+    @State private var taskForDetails: DownloadTask?
+    @State private var taskToDelete: DownloadTask?
 
     private var filteredDownloads: [DownloadTask] {
         viewModel.downloads.filter { task in
@@ -84,23 +87,29 @@ public struct DownloadsView: View {
                     }
                     Spacer()
                 } else {
-                    List {
-                        ForEach(filteredDownloads) { task in
-                            DownloadRowView(
-                                task: task,
-                                onPause: { viewModel.pauseDownload(id: task.id) },
-                                onResume: { viewModel.resumeDownload(id: task.id) },
-                                onCancel: { viewModel.cancelDownload(id: task.id) },
-                                onRemove: { viewModel.removeDownload(id: task.id) },
-                                onOpen: {
-                                    if FileManager.default.fileExists(atPath: task.destPath) {
-                                        previewUrl = URL(fileURLWithPath: task.destPath)
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredDownloads) { task in
+                                DownloadCard(
+                                    task: task,
+                                    onPause: { viewModel.pauseDownload(id: task.id) },
+                                    onResume: { viewModel.resumeDownload(id: task.id) },
+                                    onCancel: { viewModel.cancelDownload(id: task.id) },
+                                    onRemove: { taskToDelete = task },
+                                    onOpen: {
+                                        if FileManager.default.fileExists(atPath: task.destPath) {
+                                            previewUrl = URL(fileURLWithPath: task.destPath)
+                                        }
+                                    },
+                                    onDetails: {
+                                        taskForDetails = task
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 24)
                     }
-                    .listStyle(InsetGroupedListStyle())
                 }
             }
             .navigationTitle("Downloads")
@@ -115,11 +124,25 @@ public struct DownloadsView: View {
                 }
             }
             .sheet(isPresented: $showingAddSheet) {
-                AddDownloadSheet { url, dest in
+                AddDownloadDialog { url, dest in
                     viewModel.addDownload(url: url, destPath: dest)
                 }
+            }
+            .sheet(item: $taskForDetails) { task in
+                DownloadDetailsDialog(task: task)
+            }
+            .alert(item: $taskToDelete) { task in
+                Alert(
+                    title: Text("Remove Download"),
+                    message: Text("Are you sure you want to remove \"\(task.fileName)\" from your download list?"),
+                    primaryButton: .destructive(Text("Remove")) {
+                        viewModel.removeDownload(id: task.id)
+                    },
+                    secondaryButton: .cancel()
+                )
             }
             .quickLookPreview($previewUrl)
         }
     }
 }
+

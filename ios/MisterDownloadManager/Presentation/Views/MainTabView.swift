@@ -10,19 +10,19 @@ public struct MainTabView: View {
 
     public var body: some View {
         TabView(selection: $selectedTab) {
-            DashboardView(viewModel: viewModel, selectedTab: $selectedTab)
+            DashboardScreen(viewModel: viewModel, selectedTab: $selectedTab)
                 .tabItem {
                     Label("Dashboard", systemImage: "gauge.with.needle")
                 }
                 .tag(0)
 
-            DownloadsView(viewModel: viewModel)
+            DownloadsScreen(viewModel: viewModel)
                 .tabItem {
                     Label("Downloads", systemImage: "arrow.down.circle")
                 }
                 .tag(1)
 
-            SettingsView()
+            SettingsScreen()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }

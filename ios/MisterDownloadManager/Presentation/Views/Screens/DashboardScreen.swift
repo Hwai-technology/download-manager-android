@@ -71,18 +71,14 @@ public struct DashboardView: View {
                     } else {
                         VStack(spacing: 12) {
                             ForEach(activeDownloads) { task in
-                                DownloadRowView(
+                                DownloadCard(
                                     task: task,
                                     onPause: { viewModel.pauseDownload(id: task.id) },
                                     onResume: { viewModel.resumeDownload(id: task.id) },
                                     onCancel: { viewModel.cancelDownload(id: task.id) },
                                     onRemove: { viewModel.removeDownload(id: task.id) },
-                                    onOpen: {}
-                                )
-                                .padding(12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(UIColor.secondarySystemGroupedBackground))
+                                    onOpen: {},
+                                    onDetails: {}
                                 )
                             }
                         }
@@ -102,7 +98,7 @@ public struct DashboardView: View {
                 }
             }
             .sheet(isPresented: $showingAddSheet) {
-                AddDownloadSheet { url, dest in
+                AddDownloadDialog { url, dest in
                     viewModel.addDownload(url: url, destPath: dest)
                 }
             }
