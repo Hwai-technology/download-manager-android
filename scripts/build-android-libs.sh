@@ -36,7 +36,8 @@ TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
 API=26
 
 TARGET_DIR="$ROOT_DIR/android/app/src/main/jniLibs"
-mkdir -p "$TARGET_DIR/arm64-v8a" "$TARGET_DIR/x86_64"
+OUTPUT_JNI="$ROOT_DIR/output/android/jniLibs"
+mkdir -p "$TARGET_DIR/arm64-v8a" "$TARGET_DIR/x86_64" "$OUTPUT_JNI/arm64-v8a" "$OUTPUT_JNI/x86_64"
 
 # 2. Build for aarch64-linux-android (arm64-v8a)
 echo "--> Compiling for aarch64-linux-android (arm64-v8a)..."
@@ -46,7 +47,8 @@ export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$TOOLCHAIN/bin/aarch64-linux-a
 
 cargo build --package mdm-mobile --features jni --target aarch64-linux-android --release
 cp "$ROOT_DIR/target/aarch64-linux-android/release/libmdm_mobile.so" "$TARGET_DIR/arm64-v8a/"
-echo "    [OK] arm64-v8a placed in $TARGET_DIR/arm64-v8a/libmdm_mobile.so"
+cp "$ROOT_DIR/target/aarch64-linux-android/release/libmdm_mobile.so" "$OUTPUT_JNI/arm64-v8a/"
+echo "    [OK] arm64-v8a placed in $TARGET_DIR/arm64-v8a/ and $OUTPUT_JNI/arm64-v8a/"
 
 # 3. Build for x86_64-linux-android (x86_64)
 echo "--> Compiling for x86_64-linux-android (x86_64)..."
@@ -56,7 +58,8 @@ export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$TOOLCHAIN/bin/x86_64-linux-and
 
 cargo build --package mdm-mobile --features jni --target x86_64-linux-android --release
 cp "$ROOT_DIR/target/x86_64-linux-android/release/libmdm_mobile.so" "$TARGET_DIR/x86_64/"
-echo "    [OK] x86_64 placed in $TARGET_DIR/x86_64/libmdm_mobile.so"
+cp "$ROOT_DIR/target/x86_64-linux-android/release/libmdm_mobile.so" "$OUTPUT_JNI/x86_64/"
+echo "    [OK] x86_64 placed in $TARGET_DIR/x86_64/ and $OUTPUT_JNI/x86_64/"
 
 echo "=========================================================="
 echo "SUCCESS: All native JNI libraries compiled and synchronized."

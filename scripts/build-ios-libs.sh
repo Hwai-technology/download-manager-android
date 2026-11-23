@@ -19,8 +19,13 @@ cargo build --package mdm-mobile --target aarch64-apple-ios --release || {
 }
 
 TARGET_DIR="$ROOT_DIR/ios/MisterDownloadManager/Libs"
-mkdir -p "$TARGET_DIR"
+OUTPUT_IOS="$ROOT_DIR/output/ios"
+mkdir -p "$TARGET_DIR" "$OUTPUT_IOS"
 cp "$ROOT_DIR/target/aarch64-apple-ios/release/libmdm_mobile.a" "$TARGET_DIR/"
+cp "$ROOT_DIR/target/aarch64-apple-ios/release/libmdm_mobile.a" "$OUTPUT_IOS/"
+if [ -f "$ROOT_DIR/crates/mobile/include/mdm_mobile.h" ]; then
+    cp "$ROOT_DIR/crates/mobile/include/mdm_mobile.h" "$OUTPUT_IOS/"
+fi
 echo "=========================================================="
-echo "SUCCESS: iOS static library placed in $TARGET_DIR/libmdm_mobile.a"
+echo "SUCCESS: iOS static library placed in $TARGET_DIR and $OUTPUT_IOS"
 echo "=========================================================="

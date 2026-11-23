@@ -8,6 +8,8 @@
 /target/
 **/target/
 build-output/
+output/*
+!output/**/.gitkeep
 *.rs.bk
 *.pdb
 *.d

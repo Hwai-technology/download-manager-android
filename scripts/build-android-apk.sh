@@ -11,10 +11,19 @@ cd "$ROOT_DIR"
 
 echo "=== [MDM] Building Android Application (Debug APK) Locally ==="
 
-# 1. Detect and configure Java 17
-if [ -z "${JAVA_HOME:-}" ] || ! "$JAVA_HOME/bin/java" -version 2>&1 | grep -q 'version "17'; then
-    for candidate in /usr/lib/jvm/java-17-temurin-jdk /usr/lib/jvm/temurin-17-jdk /usr/lib/jvm/java-17-openjdk /usr/lib/jvm/java-17; do
-        if [ -d "$candidate" ]; then
+# 1. Detect and configure Java / JDK (Prefer JDK 17 for Android Gradle Plugin)
+if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME}/bin/javac" ]; then
+    for candidate in \
+        "$HOME/.jdk/jdk-17"* \
+        "$HOME/.jdk/jdk-21"* \
+        /usr/lib/jvm/java-17-temurin-jdk \
+        /usr/lib/jvm/temurin-17-jdk \
+        /usr/lib/jvm/java-17-openjdk \
+        /usr/lib/jvm/java-17 \
+        "/var/lib/flatpak/app/com.google.AndroidStudio/x86_64/stable/active/files/extra/jbr" \
+        "/var/lib/flatpak/app/com.jetbrains.IntelliJ-IDEA-Ultimate/x86_64/stable/active/files/jbr" \
+        /usr/lib/jvm/java-*; do
+        if [ -d "$candidate" ] && [ -x "$candidate/bin/javac" ]; then
             export JAVA_HOME="$candidate"
             export PATH="$JAVA_HOME/bin:$PATH"
             break
@@ -56,10 +65,16 @@ chmod +x gradlew
 
 APK_PATH="$ROOT_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
 if [ -f "$APK_PATH" ]; then
+    # Export artifact to centralized output directory
+    OUTPUT_DIR="$ROOT_DIR/output/android"
+    mkdir -p "$OUTPUT_DIR"
+    cp "$APK_PATH" "$OUTPUT_DIR/app-debug.apk"
+
     echo "=========================================================="
     echo "SUCCESS: Android Debug APK compiled successfully:"
-    echo "Path: $APK_PATH"
-    echo "Size: $(du -h "$APK_PATH" | cut -f1)"
+    echo "Local Build: $APK_PATH"
+    echo "Artifact:    $OUTPUT_DIR/app-debug.apk"
+    echo "Size:        $(du -h "$OUTPUT_DIR/app-debug.apk" | cut -f1)"
     echo "=========================================================="
 else
     echo "Error: Expected APK output not found at $APK_PATH"
