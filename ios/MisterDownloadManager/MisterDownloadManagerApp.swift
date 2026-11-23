@@ -21,7 +21,7 @@ struct MisterDownloadManagerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DownloadListView(viewModel: viewModel)
+            MainTabView(viewModel: viewModel)
         }
     }
 }
