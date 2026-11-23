@@ -81,7 +81,8 @@ fun AddDownloadDialog(
                     if (trimmedUrl.startsWith("http://", ignoreCase = true) ||
                         trimmedUrl.startsWith("https://", ignoreCase = true)
                     ) {
-                        val finalFileName = if (fileName.isNotBlank()) fileName.trim() else "download.bin"
+                        val rawFileName = if (fileName.isNotBlank()) fileName.trim() else "download.bin"
+                        val finalFileName = FileUtils.sanitizeFileName(rawFileName)
                         val baseDir = File(defaultDir)
                         val destFile = FileUtils.getUniqueDestination(baseDir, finalFileName)
                         onConfirm(trimmedUrl, destFile.absolutePath)

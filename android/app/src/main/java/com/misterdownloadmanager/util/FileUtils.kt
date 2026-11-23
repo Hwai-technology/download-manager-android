@@ -55,16 +55,25 @@ object FileUtils {
         return candidate
     }
 
+    fun sanitizeFileName(name: String): String {
+        val cleaned = name.replace(Regex("[/\\\\:*?\"<>|]"), "_")
+            .replace("..", "")
+            .trim()
+        val withoutLeadingDots = cleaned.trimStart('.')
+        return if (withoutLeadingDots.isNotBlank()) withoutLeadingDots else "download.bin"
+    }
+
     fun extractFileNameFromUrl(url: String): String {
         return try {
             val cleanUrl = url.substringBefore('?').substringBefore('#')
             val rawName = cleanUrl.substringAfterLast('/')
             val decoded = URLDecoder.decode(rawName, StandardCharsets.UTF_8.name())
-            if (decoded.isNotBlank() && decoded.contains('.')) {
+            val candidate = if (decoded.isNotBlank() && decoded.contains('.')) {
                 decoded
             } else {
                 "download.bin"
             }
+            sanitizeFileName(candidate)
         } catch (_: Exception) {
             "download.bin"
         }

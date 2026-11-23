@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Exclude temporary download persistence files and session caches from cloud backup -->
+        <exclude domain="file" path="persistence" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="persistence" />
+    </device-transfer>
+</data-extraction-rules>
