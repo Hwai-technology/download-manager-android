@@ -31,9 +31,9 @@ Built as a unified monorepo, MDM pairs a shared, memory-safe **Rust download eng
 
 1. [Features & Capabilities](#features--capabilities)
 2. [Platform & Feature Support Matrix](#platform--feature-support-matrix)
-3. [Brand Identity & Color Palette (نظام الألوان والتصميم)](#brand-identity--color-palette-نظام-الألوان-والتصميم)
-4. [Build Variants & Output Artifacts (أنواع البناء والإصدارات)](#build-variants--output-artifacts-أنواع-البناء-والإصدارات)
-5. [Release Workflow & Checksum Verification (الريليس والتحقق)](#release-workflow--checksum-verification-الريليس-والتحقق)
+3. [Brand Identity & Color Palette](#brand-identity--color-palette)
+4. [Build Variants & Output Artifacts](#build-variants--output-artifacts)
+5. [Release Workflow & Checksum Verification](#release-workflow--checksum-verification)
 6. [Repository Structure](#repository-structure)
 7. [System Architecture & Data Flow](#system-architecture--data-flow)
 8. [Build & Local Development Setup](#build--local-development-setup)
@@ -41,7 +41,7 @@ Built as a unified monorepo, MDM pairs a shared, memory-safe **Rust download eng
    - [Docker Build Pipeline](#docker-build-pipeline)
    - [Desktop App Build](#desktop-app-build)
    - [iOS Setup](#ios-setup)
-9. [Contributing & Code Standards (المساهمات)](#contributing--code-standards-المساهمات)
+9. [Contributing & Code Standards](#contributing--code-standards)
 10. [Download Lifecycle State Machine](#download-lifecycle-state-machine)
 11. [Troubleshooting](#troubleshooting)
 12. [Attribution & License](#attribution--license)
@@ -76,11 +76,11 @@ Built as a unified monorepo, MDM pairs a shared, memory-safe **Rust download eng
 
 ---
 
-## Brand Identity & Color Palette (نظام الألوان والتصميم)
+## Brand Identity & Color Palette
 
 The application's visual styling reflects the official mascot artwork (The Globe Gentleman with high-speed orbit arrow). All frontends adhere to these unified tokens and gradients:
 
-### Official Brand Colors (الألوان الأساسية والثانوية)
+### Official Brand Colors
 | Color Role | Name | Hex Code | Android Theme Token | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **Primary Action** | Electric Blue | `#2563EB` / `#3B82F6` | `LightPrimary` / `DarkPrimary` | Primary buttons, active tabs, header highlights |
@@ -89,7 +89,7 @@ The application's visual styling reflects the official mascot artwork (The Globe
 | **Secondary Chip** | Royal Indigo | `#6366F1` / `#4F46E5` | `DarkSecondary` / `LightSecondary` | Metadata tags, filter chips, secondary badges |
 | **Surface Dark** | Midnight Slate | `#0A0F1D` / `#131B2E` | `DarkBackground` / `DarkSurface` | Clean dark mode backgrounds and elevated card surfaces |
 
-### Official Dynamic Gradients (تدرجات الألوان)
+### Official Dynamic Gradients
 - **Download Acceleration Gradient:** `linear-gradient(135deg, #10B981 0%, #06B6D4 100%)`  
   *Applied to live progress bars and active transfer speeds.*
 - **Orbit Stream Gradient:** `linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)`  
@@ -97,7 +97,7 @@ The application's visual styling reflects the official mascot artwork (The Globe
 - **Gentleman's Dark Surface:** `linear-gradient(180deg, #1B253D 0%, #0A0F1D 100%)`  
   *Applied to bottom sheets, modal headers, and drawer backgrounds.*
 
-### Semantic Download States (ألوان الحالات)
+### Semantic Download States
 - 🟢 **Downloading:** Emerald Green (`#10B981`)
 - 🔵 **Done (Complete):** Solid Blue (`#3B82F6`)
 - 🟡 **Paused:** Warning Amber (`#F59E0B`)
@@ -109,7 +109,7 @@ The application's visual styling reflects the official mascot artwork (The Globe
 
 ---
 
-## Build Variants & Output Artifacts (أنواع البناء والإصدارات)
+## Build Variants & Output Artifacts
 
 MDM provides production-ready artifacts tailored for mobile, desktop, and web platforms:
 
@@ -136,7 +136,7 @@ MDM provides production-ready artifacts tailored for mobile, desktop, and web pl
 
 ---
 
-## Release Workflow & Checksum Verification (الريليس والتحقق)
+## Release Workflow & Checksum Verification
 
 ### Automated GitHub Release Process
 Releases are triggered automatically whenever a version tag matching `vX.Y.Z` is pushed to GitHub:
@@ -333,7 +333,7 @@ cargo run -p mdm-app
 
 ---
 
-## Contributing & Code Standards (المساهمات)
+## Contributing & Code Standards
 
 We welcome community contributions! Please review our [**CONTRIBUTING.md**](CONTRIBUTING.md) guide before submitting a pull request.
 
