@@ -18,6 +18,8 @@ private val DarkColorScheme = darkColorScheme(
     onPrimaryContainer = DarkTextPrimary,
     secondary = DarkSecondary,
     onSecondary = DarkTextPrimary,
+    secondaryContainer = DarkSurfaceElevated,
+    onSecondaryContainer = DarkSecondary,
     background = DarkBackground,
     onBackground = DarkTextPrimary,
     surface = DarkSurface,
@@ -25,16 +27,20 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = DarkSurfaceElevated,
     onSurfaceVariant = DarkTextSecondary,
     outline = DarkSurfaceBorder,
-    error = StateFailed
+    outlineVariant = DarkSurfaceBorder.copy(alpha = 0.5f),
+    error = StateFailed,
+    onError = DarkTextPrimary
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = LightPrimary,
     onPrimary = LightSurface,
     primaryContainer = LightSurfaceElevated,
-    onPrimaryContainer = LightPrimaryVariant,
+    onPrimaryContainer = LightPrimary,
     secondary = LightSecondary,
     onSecondary = LightSurface,
+    secondaryContainer = LightSurfaceElevated,
+    onSecondaryContainer = LightSecondary,
     background = LightBackground,
     onBackground = LightTextPrimary,
     surface = LightSurface,
@@ -42,7 +48,9 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = LightSurfaceElevated,
     onSurfaceVariant = LightTextSecondary,
     outline = LightSurfaceBorder,
-    error = StateFailed
+    outlineVariant = LightSurfaceBorder.copy(alpha = 0.6f),
+    error = StateFailed,
+    onError = LightSurface
 )
 
 enum class ThemeMode {
