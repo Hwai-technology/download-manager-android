@@ -5,6 +5,7 @@
   "scripts": {
     "apk": "bash scripts/build-android-apk.sh",
     "bundle": "bash scripts/build-android-bundle.sh",
+    "build:all": "bash scripts/build-all.sh",
     "build:android": "bash scripts/build-android-apk.sh",
     "build:bundle": "bash scripts/build-android-bundle.sh",
     "build:libs": "bash scripts/build-android-libs.sh",
