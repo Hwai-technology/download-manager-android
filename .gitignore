@@ -1,32 +1,148 @@
-# Build output
+# ==============================================================================
+# Mister Download Manager (MDM) - Comprehensive .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Rust & Cargo Build Outputs
+# ------------------------------------------------------------------------------
 /target/
+**/target/
+build-output/
+*.rs.bk
+*.pdb
+*.d
+incremental/
+*.rlib
 
-# Local, untracked study material (vendor docs extracted for reading)
-/.study/
+# ------------------------------------------------------------------------------
+# Android & Gradle
+# ------------------------------------------------------------------------------
+.gradle/
+**/.gradle/
+build/
+**/build/
+android/app/build/
+android/.gradle/
 
-# Editor / OS
-.vscode/
-.idea/
-*.swp
-Thumbs.db
-.DS_Store
-__pycache__/
+# Android Studio & Local Environment Config (Private SDK paths)
+local.properties
+android/local.properties
 
+# Android C/C++ build artifacts & NDK
+.cxx/
+**/captures/
+
+# Android Package Outputs
+*.apk
+*.ap_
+*.aab
+
+# Android Profiling & Logs
+*.hprof
+
+# Android Signing Keys & Keystores (CRITICAL - NEVER COMMIT)
+*.jks
+*.keystore
+signing.properties
+
+# ------------------------------------------------------------------------------
+# iOS & Apple Xcode
+# ------------------------------------------------------------------------------
+ios/**/build/
+ios/MisterDownloadManager/Libs/
+DerivedData/
+*.moved-aside
+*.xcuserstate
+xcuserdata/
+!default.pbxuser
+!default.mode1v3
+!default.mode2v3
+!default.perspectivev3
+*.xcscmblueprint
+
+# ------------------------------------------------------------------------------
+# Node.js & JavaScript
+# ------------------------------------------------------------------------------
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
 
-# Impeccable (.claude/skills/impeccable): its engine downloads on first use; personal Claude Code settings
+# ------------------------------------------------------------------------------
+# Python
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# ------------------------------------------------------------------------------
+# Operating System & IDE Specific
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# JetBrains / Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Visual Studio Code
+.vscode/
+
+# Vim / Emacs / General editor swap & backup files
+*.swp
+*.swo
+*~
+*.bak
+
+# ------------------------------------------------------------------------------
+# Logs, Dumps & Temp Files
+# ------------------------------------------------------------------------------
+*.log
+docker-build.log
+*.tmp
+*.temp
+*.crash
+*.dmp
+*.dump
+
+# ------------------------------------------------------------------------------
+# Security, Certificates & Secrets (CRITICAL)
+# ------------------------------------------------------------------------------
+/k/
+*.pem
+*.key
+*.pfx
+*.p12
+*.asc.private
+.env
+.env.*
+!.env.example
+
+# ------------------------------------------------------------------------------
+# Local Study & AI Tooling Caches
+# ------------------------------------------------------------------------------
+/.study/
 /.claude/skills/impeccable/scripts/bin/
 /.claude/settings.local.json
+/.claude/worktrees/
 /.impeccable/review/
 /.impeccable/hook.cache.json
 /.impeccable/questions/
-# Agents' git worktrees (Claude Code).
-/.claude/worktrees/
-# Keys (API keys, signing keys): never committed.
-/k/
-
-# Build outputs
-**/build/
-**/target/
-*.apk
-*.aab
+.system_generated/
+.antigravity/

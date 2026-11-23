@@ -1278,8 +1278,9 @@ def fill(text: str) -> str:
 
 
 def build_templated(name: str, path: str, section: str, priority: str) -> None:
-    """website/<name>: a full page whose <!--@header--> and <!--@footer--> are filled in."""
-    text = fill((WEB / name).read_text("utf-8"))
+    """website/pages/<name> or website/<name>: a full page whose <!--@header--> and <!--@footer--> are filled in."""
+    src = WEB / "pages" / name if (WEB / "pages" / name).is_file() else WEB / name
+    text = fill(src.read_text("utf-8"))
     text = text.replace("<!--@header-->", header(section)).replace("<!--@footer-->", footer())
     text = text.replace("<!--@theme-->", THEME_SCRIPT)
     target = OUT / (path.lstrip("/") or "index.html")
@@ -1659,12 +1660,22 @@ def copy_static() -> None:
     for old in OUT.iterdir():
         shutil.rmtree(old) if old.is_dir() else old.unlink()
     for item in WEB.iterdir():
-        if item.name in ("content",) or item.suffix == ".html":
+        if item.name in ("content", "pages") or item.suffix == ".html":
             continue
         if item.is_dir():
             shutil.copytree(item, OUT / item.name)
         else:
             shutil.copy2(item, OUT / item.name)
+    # Ensure styles.css and scripts are available at root and under css/js
+    if (WEB / "src" / "css" / "styles.css").is_file():
+        (OUT / "css").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(WEB / "src" / "css" / "styles.css", OUT / "css" / "styles.css")
+        shutil.copy2(WEB / "src" / "css" / "styles.css", OUT / "styles.css")
+    if (WEB / "src" / "js").is_dir():
+        (OUT / "js").mkdir(parents=True, exist_ok=True)
+        for js_file in (WEB / "src" / "js").glob("*.js"):
+            shutil.copy2(js_file, OUT / "js" / js_file.name)
+            shutil.copy2(js_file, OUT / js_file.name)
     shutil.copy2(ROOT / "docs" / "images" / "social-preview.png", OUT / "assets" / "social.png")
     # The automation API's JSON Schema, at the address its "$id" names.
     schema = ROOT / "docs" / "automation-api.schema.json"

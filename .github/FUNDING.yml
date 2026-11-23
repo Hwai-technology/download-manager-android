@@ -1,4 +1,26 @@
-# GitHub's Sponsor button on the repository: the creator's GitHub Sponsors page (the app's
-# Help -> Support MDM, the website and the extension's popup point there too).
-# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
-github: anefzaoui
+# ==============================================================================
+# GitHub Funding Configuration (إعدادات زر دعم ورعاية المشروع على GitHub)
+# Documentation: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. روابط الدعم السريعة المباشرة (لا تتطلب موافقة أو حساب غيتهاب معتمد)
+# ------------------------------------------------------------------------------
+# تظهر هذه الروابط فوراً لجميع الزوار تحت زر "Sponsor" في أعلى المستودع:
+custom:
+  - 'https://buymeacoffee.com/hwai'
+  - 'https://paypal.me/hwaitechnology'
+
+# ------------------------------------------------------------------------------
+# 2. منصات الدعم المجتمعي الفورية (Ko-fi & Patreon)
+# ------------------------------------------------------------------------------
+# يمكنك إنشاء حسابك خلال دقيقة واحدة وتفعيله هنا مباشرة:
+ko_fi: hwai
+# patreon: hwai
+
+# ------------------------------------------------------------------------------
+# 3. برنامج GitHub Sponsors الرسمي (يتطلب موافقة حساب المنظمة)
+# ------------------------------------------------------------------------------
+# يتم تفعيله تلقائياً بعد إتمام التسجيل في غيتهاب:
+github:
+  - Hwai-technology

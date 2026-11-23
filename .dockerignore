@@ -1,9 +1,63 @@
-target/
-build-output/
-android/.gradle/
-android/app/build/
-ios/MisterDownloadManager/Libs/
+# ==============================================================================
+# Docker Build Ignore Configuration
+# Minimizes build context transfer to Docker daemon for fast, reproducible builds
+# ==============================================================================
+
+# Version Control & CI/CD
 .git/
+.github/
+
+# Documentation, Website, Art & Audits (Not needed for binary compilation)
+docs/
+website/
+art/
+AUDIT_REPORTS/
+*.md
+!crates/**/README.md
+
+# AI & Editor configurations
+.agents/
+.impeccable/
+.vscode/
+.idea/
+.claude/
 .system_generated/
+.antigravity/
+.study/
+
+# Rust build outputs
+target/
+**/target/
+build-output/
+
+# Android build outputs & local caches
+android/.gradle/
+**/.gradle/
+android/app/build/
+**/build/
+android/local.properties
+local.properties
+.cxx/
+**/captures/
+
+# Application packages & signing keys
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# iOS libraries & builds
+ios/
+DerivedData/
+
+# Logs & temp files
 *.log
+docker-build.log
 docker/config/
+*.tmp
+node_modules/
+__pycache__/
+
+# OS artifacts
+.DS_Store
+Thumbs.db

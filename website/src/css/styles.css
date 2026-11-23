@@ -65,6 +65,35 @@
   --bench-startup: #b7791f;
   --bench-transfer: #2563c9;
   --bench-finish: #7d4fc0;
+
+  /* ---- Official MDM Design Tokens & Palette (Tailwind-compatible) ---- */
+  --mdm-blue: #2563eb;
+  --mdm-blue-light: #3b82f6;
+  --mdm-blue-deep: #1d4ed8;
+  --mdm-emerald: #10b981;
+  --mdm-emerald-light: #22c55e;
+  --mdm-emerald-deep: #059669;
+  --mdm-cyan: #06b6d4;
+  --mdm-cyan-deep: #0284c7;
+  --mdm-indigo: #6366f1;
+  --mdm-lime: #84cc16;
+  --mdm-slate-900: #0a0f1d;
+  --mdm-slate-800: #131b2e;
+  --mdm-slate-700: #1b253d;
+  --mdm-slate-600: #223050;
+
+  /* Dynamic Gradients */
+  --gradient-speed: linear-gradient(135deg, var(--mdm-emerald) 0%, var(--mdm-cyan) 100%);
+  --gradient-orbit: linear-gradient(135deg, var(--mdm-cyan) 0%, var(--mdm-blue-light) 100%);
+  --gradient-surface: linear-gradient(180deg, var(--mdm-slate-700) 0%, var(--mdm-slate-900) 100%);
+
+  /* Semantic State Colors */
+  --state-downloading: var(--mdm-emerald);
+  --state-done: var(--mdm-blue-light);
+  --state-paused: #f59e0b;
+  --state-failed: #ef4444;
+  --state-probing: #8b5cf6;
+  --state-waiting: #64748b;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {

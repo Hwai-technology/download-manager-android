@@ -1,114 +1,224 @@
-# Mister Download Manager — Native Cross-Platform Architecture & Developer Guide
+# Mister Download Manager (MDM)
 
-Mister Download Manager (MDM) is a high-performance download manager featuring a shared, robust Rust download engine core alongside native frontends for Desktop (egui), Android (Kotlin + Jetpack Compose), and iOS (Swift + SwiftUI).
+<div align="center">
 
-This repository is maintained as a monorepo structured to reuse the upstream Rust engine (`mdm-engine`) directly across native mobile platforms without duplicating download orchestration logic or introducing heavy cross-platform runtimes like React Native or Flutter.
+<img src="art/Mister%20Download%20Manager.png" alt="Mister Download Manager Logo" width="160" height="160" />
+
+### High-Performance Native Cross-Platform Download Acceleration Engine & Frontends
+
+[![CI Pipeline](https://github.com/anefzaoui/download-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/anefzaoui/download-manager/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/Release-v0.5.2-blue.svg)](https://github.com/anefzaoui/download-manager/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](LICENSE)
+[![Rust Version](https://img.shields.io/badge/Rust-1.95%2B-orange.svg)](https://www.rust-lang.org/)
+[![Android API](https://img.shields.io/badge/Android-API%2026%2B%20(Oreo%2B)-brightgreen.svg)](https://developer.android.com)
+[![iOS Target](https://img.shields.io/badge/iOS-16.0%2B-lightgrey.svg)](https://developer.apple.com/ios/)
+
+**Desktop (Windows · Linux · macOS) · Mobile (Android · iOS) · Browser Extensions (Chromium · Firefox)**
+
+</div>
+
+---
+
+## Overview
+
+**Mister Download Manager (MDM)** is an ultra-fast, modern download manager engineered for multi-connection acceleration, dynamic file segmentation, and resilient resume recovery. 
+
+Built as a unified monorepo, MDM pairs a shared, memory-safe **Rust download engine core** directly with **100% native frontends** for each platform (Android with Kotlin & Jetpack Compose, iOS with Swift & SwiftUI, and Desktop with Rust & `egui`). This zero-compromise architecture guarantees top-tier performance, minimal memory footprints, and authentic platform UX without the overhead of hybrid runtimes (React Native, Electron, or Flutter).
 
 ---
 
 ## Table of Contents
 
-1. [Project Overview](#1-project-overview)
-2. [Feature and Platform Support Matrix](#2-feature-and-platform-support-matrix)
-3. [Repository and Workspace Architecture](#3-repository-and-workspace-architecture)
-4. [High-Level Architecture Diagrams](#4-high-level-architecture-diagrams)
-5. [Shared Rust Mobile Core (`crates/mobile`)](#5-shared-rust-mobile-core-cratesmobile)
-6. [Native FFI Architecture](#6-native-ffi-architecture)
-   - [Android JNI Boundary](#android-jni-boundary)
-   - [iOS C-ABI Boundary](#ios-c-abi-boundary)
-7. [Android Native Application (`android/`)](#7-android-native-application-android)
-8. [iOS Native Application (`ios/`)](#8-ios-native-application-ios)
-9. [Build and Development Setup](#9-build-and-development-setup)
-10. [Verified Build & Verification Commands](#10-verified-build--verification-commands)
-11. [Testing and Quality Assurance](#11-testing-and-quality-assurance)
-12. [Download Lifecycle and Queue State Machine](#12-download-lifecycle-and-queue-state-machine)
-13. [Storage, Part Files, and State Recovery](#13-storage-part-files-and-state-recovery)
-14. [Troubleshooting Common Issues](#14-troubleshooting-common-issues)
-15. [Known Limitations and Roadmap](#15-known-limitations-and-roadmap)
-16. [References and Upstream Attribution](#16-references-and-upstream-attribution)
+1. [Features & Capabilities](#features--capabilities)
+2. [Platform & Feature Support Matrix](#platform--feature-support-matrix)
+3. [Brand Identity & Color Palette (نظام الألوان والتصميم)](#brand-identity--color-palette-نظام-الألوان-والتصميم)
+4. [Build Variants & Output Artifacts (أنواع البناء والإصدارات)](#build-variants--output-artifacts-أنواع-البناء-والإصدارات)
+5. [Release Workflow & Checksum Verification (الريليس والتحقق)](#release-workflow--checksum-verification-الريليس-والتحقق)
+6. [Repository Structure](#repository-structure)
+7. [System Architecture & Data Flow](#system-architecture--data-flow)
+8. [Build & Local Development Setup](#build--local-development-setup)
+   - [Local Android APK Build](#local-android-apk-build)
+   - [Docker Build Pipeline](#docker-build-pipeline)
+   - [Desktop App Build](#desktop-app-build)
+   - [iOS Setup](#ios-setup)
+9. [Contributing & Code Standards (المساهمات)](#contributing--code-standards-المساهمات)
+10. [Download Lifecycle State Machine](#download-lifecycle-state-machine)
+11. [Troubleshooting](#troubleshooting)
+12. [Attribution & License](#attribution--license)
 
 ---
 
-## 1. Project Overview
+## Features & Capabilities
 
-- **Core Engine:** Written in Rust (`crates/engine`), implementing dynamic file segmentation, multi-connection pooling, speed limiting, resume validation, and robust error recovery.
-- **Desktop Application:** Written in Rust using `egui` (`crates/app`), supporting Windows, macOS, and Linux desktop environments.
-- **Mobile Core Bridge:** Written in Rust (`crates/mobile`), providing thread-safe queue scheduling, lifecycle preservation, point-in-time progress snapshots, and dual C-ABI / JNI interfaces.
-- **Android Frontend:** 100% native Kotlin and Jetpack Compose (`android/`), communicating via JNI directly with `libmdm_mobile.so`, backed by an Android Foreground Service.
-- **iOS Frontend:** 100% native Swift and SwiftUI (`ios/`), linking against the C-ABI exported static library/headers with Combine-driven reactive updates.
+- **Dynamic File Segmentation:** Real-time stream splitting with concurrent connection pooling across all available bandwidth.
+- **Resilient Resume & Checkpoint Persistence:** Transfer checkpoints and HTTP resume validators (ETags, Last-Modified) persist atomic state metadata to `<filename>.mdm.json`.
+- **Zero-Copy Native FFI Bridge:** Dual foreign-function interfaces (JNI for Android, C-ABI for iOS) guarantee maximum transfer throughput with zero pointer hazards.
+- **Android Foreground Service (`dataSync`):** Persistent, battery-conscious background execution with active notification channels complying with Android 14+ background execution policies.
+- **BitTorrent Engine (Desktop):** Built-in torrent client engine (`crates/torrent`) powered by an optimized `librqbit` implementation with per-torrent rate limits.
+- **Browser Integration:** Native messaging hosts and browser extensions for Chrome, Firefox, Edge, Brave, Opera, and Vivaldi.
+- **Clean Room Engineering:** 100% original codebase written from scratch under the GNU General Public License v3.0.
 
 ---
 
-## 2. Feature and Platform Support Matrix
+## Platform & Feature Support Matrix
 
-| Capability / Feature | Original Desktop (`crates/app`) | Android Native (`android/`) | iOS Native (`ios/`) | Shared Rust Core (`crates/mobile`) |
+| Capability / Platform | Android Native (`android/`) | iOS Native (`ios/`) | Desktop (`crates/app`) | Core Engine (`crates/engine`) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Multi-Connection HTTP/HTTPS** | **VERIFIED** | **VERIFIED** (via Rust) | **VERIFIED** (via Rust) | **VERIFIED** |
-| **Dynamic Segmentation** | **VERIFIED** | **VERIFIED** (via Rust) | **VERIFIED** (via Rust) | **VERIFIED** |
-| **Download Queue Management** | **VERIFIED** | **VERIFIED** (Native + Core) | **VERIFIED** (Native + Core) | **VERIFIED** |
-| **Pause / Resume via `.mdm.json`** | **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
-| **Speed Calculation & Reporting** | **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
-| **Android Foreground Service** | N/A | **VERIFIED** (`dataSync`) | N/A | N/A |
-| **Background Execution** | Desktop Background/Tray | Foreground Service | BGTaskScheduler (Refresh) | Runtime Threadpool |
-| **Bittorrent / Torrents** | **VERIFIED** (`crates/torrent`)| PLANNED | PLANNED | Out of Scope for Core |
-| **Browser Extensions / Native Host**| **VERIFIED** (`crates/nmhost`) | Unsupported (Mobile) | Unsupported (Mobile) | N/A |
-
-*Status definitions:*  
-- **VERIFIED:** Confirmed functional in source code, build logs, and unit/integration tests.  
-- **PLANNED:** Identified on future mobile roadmap, not currently active in mobile builds.  
-- **Unsupported:** Platform-specific desktop features not targeted at mobile environments.
+| **Multi-Connection HTTP/S** | **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
+| **Dynamic Segmentation** | **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
+| **Atomic Resume (`.mdm.json`)**| **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
+| **Queue Scheduling & Limits** | **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
+| **Speed Calculation & Telemetry**| **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
+| **Background Execution** | **Foreground Service** (`dataSync`) | **BGTaskScheduler** | System Tray / Background | Dedicated Tokio Runtime |
+| **User Interface** | Kotlin / Jetpack Compose | Swift / SwiftUI | Rust / `egui` | Headless Core / API |
+| **BitTorrent Client** | Planned | Planned | **VERIFIED** | `crates/torrent` |
+| **Browser Extension Integration**| Unsupported (Mobile) | Unsupported (Mobile) | **VERIFIED** | Native Host (`crates/nmhost`)|
 
 ---
 
-## 3. Repository and Workspace Architecture
+## Brand Identity & Color Palette (نظام الألوان والتصميم)
 
-The repository is organized as a single Cargo workspace with distinct workspace members under [`crates/`](file:///home/maya/Desktop/download-manager-android/crates/):
+The application's visual styling reflects the official mascot artwork (The Globe Gentleman with high-speed orbit arrow). All frontends adhere to these unified tokens and gradients:
+
+### Official Brand Colors (الألوان الأساسية والثانوية)
+| Color Role | Name | Hex Code | Android Theme Token | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Primary Action** | Electric Blue | `#2563EB` / `#3B82F6` | `LightPrimary` / `DarkPrimary` | Primary buttons, active tabs, header highlights |
+| **Active Transfer** | Vivid Emerald | `#10B981` / `#22C55E` | `StateDownloading` | Speed indicators, active progress bars, success markers |
+| **Speed Accent** | Cyan Stream | `#06B6D4` / `#0284C7` | `DarkAccentCyan` / `LightAccentCyan` | Network throughput monitors, active connection segments |
+| **Secondary Chip** | Royal Indigo | `#6366F1` / `#4F46E5` | `DarkSecondary` / `LightSecondary` | Metadata tags, filter chips, secondary badges |
+| **Surface Dark** | Midnight Slate | `#0A0F1D` / `#131B2E` | `DarkBackground` / `DarkSurface` | Clean dark mode backgrounds and elevated card surfaces |
+
+### Official Dynamic Gradients (تدرجات الألوان)
+- **Download Acceleration Gradient:** `linear-gradient(135deg, #10B981 0%, #06B6D4 100%)`  
+  *Applied to live progress bars and active transfer speeds.*
+- **Orbit Stream Gradient:** `linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)`  
+  *Applied to connection metrics, charts, and header accents.*
+- **Gentleman's Dark Surface:** `linear-gradient(180deg, #1B253D 0%, #0A0F1D 100%)`  
+  *Applied to bottom sheets, modal headers, and drawer backgrounds.*
+
+### Semantic Download States (ألوان الحالات)
+- 🟢 **Downloading:** Emerald Green (`#10B981`)
+- 🔵 **Done (Complete):** Solid Blue (`#3B82F6`)
+- 🟡 **Paused:** Warning Amber (`#F59E0B`)
+- 🔴 **Failed:** Coral Red (`#EF4444`)
+- 🟣 **Probing (Connecting):** Deep Violet (`#8B5CF6`)
+- ⚪ **Waiting (Queued):** Slate Gray (`#64748B`)
+
+*For full guidelines, see the [Design Tokens Specification](.agents/rules/DESIGN_TOKENS_AND_PALETTE.md).*
+
+---
+
+## Build Variants & Output Artifacts (أنواع البناء والإصدارات)
+
+MDM provides production-ready artifacts tailored for mobile, desktop, and web platforms:
+
+### 1. Android Artifacts (`android/`)
+| Build Variant | Output File | Target Audience & Purpose |
+| :--- | :--- | :--- |
+| **Debug APK** | `app-debug.apk` | Rapid local testing, contains debug logging and full symbol tables. |
+| **Release APK** | `app-release-unsigned.apk` | Standalone direct install APK for sideloading and GitHub Releases. |
+| **Release AAB** | `app-release.aab` | Google Play App Bundle with dynamic feature delivery and ABI splits. |
+| **Native Shared Libs** | `libmdm_mobile.so` | Compiled JNI binaries for `arm64-v8a` (64-bit ARM) and `x86_64` (Emulators/x86). |
+
+### 2. Desktop Artifacts (`crates/app`)
+| Platform | Distribution Format | Description |
+| :--- | :--- | :--- |
+| **Windows** | Inno Setup Installer (`.exe`) & Portable (`.zip`) | Self-contained executable with system tray & shell registration. |
+| **Linux** | AppImage, `.deb`, `.rpm`, `.tar.gz` | Universal desktop packages compiled against glibc 2.35+. |
+| **macOS** | Universal Disk Image (`.dmg`) | Bundled for Apple Silicon (`aarch64`) and Intel (`x86_64`). |
+
+### 3. Browser Extensions (`extension/`)
+| Browser Engine | Package Format | Distribution Channel |
+| :--- | :--- | :--- |
+| **Chromium** | `MisterDownloadManager-<v>-extension-chromium.zip` | Chrome, Edge, Brave, Opera, Vivaldi |
+| **Firefox** | `MisterDownloadManager-<v>-extension-firefox.xpi` | Mozilla Add-ons (AMO) & manual sideload |
+
+---
+
+## Release Workflow & Checksum Verification (الريليس والتحقق)
+
+### Automated GitHub Release Process
+Releases are triggered automatically whenever a version tag matching `vX.Y.Z` is pushed to GitHub:
+
+```bash
+git tag v0.5.2
+git push origin v0.5.2
+```
+
+The automated CI/CD workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)) performs:
+1. Workspace version consistency check against `Cargo.toml`.
+2. Cross-platform compilation for Windows, Linux, macOS, Android, and Browser Extensions.
+3. Collection of all binaries into the unified distribution directory.
+4. Computation of cryptographic checksums (`SHA256SUMS.txt`).
+5. GPG detached signing of checksums using the official MDM release key (`5826D399249DE856EA087D802E293C28E8A69D74`).
+6. Automatic creation of the GitHub Release with generated changelog notes.
+
+### Cryptographic Verification of Downloads
+Verify any release binary using the detached signature and SHA-256 table:
+
+```bash
+# 1. Import the official public release key
+gpg --import crates/tools/keys/mdm-release.asc
+
+# 2. Verify the checksum table signature
+gpg --verify SHA256SUMS.txt.sig SHA256SUMS.txt
+
+# 3. Verify downloaded artifact integrity
+sha256sum -c SHA256SUMS.txt --ignore-missing
+```
+
+### Android Release Signing Configuration
+To sign release APKs or AAB bundles, provide signing keys via environment variables or mounting:
+
+```bash
+export KEYSTORE_FILE=/path/to/release.keystore
+export KEYSTORE_PASSWORD="your-keystore-password"
+export KEY_ALIAS="mdm"
+export KEY_PASSWORD="your-key-password"
+```
+
+---
+
+## Repository Structure
 
 ```
 download-manager-android/
-├── Cargo.toml                         # Root workspace manifest (resolver = "3")
+├── Cargo.toml                         # Root Cargo workspace manifest
+├── package.json                       # Developer task scripts (npm run apk, etc.)
+├── compose.yaml                       # Multi-stage Docker build pipeline
+├── Dockerfile.mobile                  # Multi-stage container definition
+├── .gitignore                         # Comprehensive ignore file
+├── .dockerignore                      # Minimal Docker context ignore
+├── CONTRIBUTING.md                    # Official contribution guide & workflow
 ├── crates/
-│   ├── app/                           # Original desktop application (egui/winit)
 │   ├── engine/                        # Core download engine (mdm-engine)
-│   ├── mobile/                        # Shared mobile-facing Rust API & FFI (mdm-mobile)
+│   ├── mobile/                        # Mobile FFI bridge & snapshot scheduler (mdm-mobile)
+│   ├── app/                           # Native desktop application (egui / winit)
 │   ├── cli/                           # Command line interface client
-│   ├── crash/                         # Crash handler & minidump integration
-│   ├── debrid/                        # Real-Debrid API client
-│   ├── extract/                       # Archive extraction utilities
-│   ├── geo/                           # IP geolocation & mirror resolution
-│   ├── ipc/                           # Local IPC & browser extension message protocol
-│   ├── labserver/                     # Local test HTTP server for testing
-│   ├── mcp/                           # Model Context Protocol integration
-│   ├── nmhost/                        # Native messaging host for browser extensions
-│   ├── remote/                        # Remote control & web interface
-│   ├── tools/                         # Media tools (yt-dlp, ffmpeg helpers)
-│   └── torrent/                       # BitTorrent client engine (librqbit wrapper)
-├── android/                           # Native Android project (Kotlin / Compose)
-│   ├── app/                           # Android application module
-│   │   ├── src/main/java/...          # Presentation, Domain, Data, Services
-│   │   └── src/main/jniLibs/          # Compiled libmdm_mobile.so binaries
-│   ├── build.gradle.kts               # Root Gradle build script
-│   └── settings.gradle.kts            # Project settings
-├── ios/                               # Native iOS project (Swift / SwiftUI)
-│   └── MisterDownloadManager/         # Presentation, Domain, Data, Core FFI
-├── tools/
-│   ├── build-android-libs.sh          # Android NDK automated compilation script
-│   └── build-ios-libs.sh              # iOS compilation script
-└── docs/
-    └── MOBILE_ARCHITECTURE.md         # Detailed architectural documentation
+│   ├── labserver/                     # Local test server with fault-injection
+│   ├── nmhost/                        # Native messaging host for browsers
+│   └── torrent/                       # BitTorrent client engine (librqbit)
+├── android/                           # Native Android application (Kotlin / Compose)
+│   ├── app/                           # App module (Presentation, Domain, Data, Services)
+│   │   └── src/main/jniLibs/          # Precompiled libmdm_mobile.so binaries
+│   └── gradlew                        # Gradle build wrapper
+├── ios/                               # Native iOS application (Swift / SwiftUI)
+│   └── MisterDownloadManager/         # Presentation, ViewModels, C-ABI FFI wrapper
+├── extension/                         # Browser extensions (Chrome / Firefox)
+├── tools/                             # Automation, packaging, and build scripts
+└── docs/                              # Technical guides and architecture specs
 ```
 
 ---
 
-## 4. High-Level Architecture Diagrams
-
-### A. System Component Diagram
+## System Architecture & Data Flow
 
 ```mermaid
 flowchart TD
-    subgraph RustWorkspace["Rust Core Workspace"]
-        Engine["mdm-engine\n(Download Execution & Slicing)"]
-        MobileCore["mdm-mobile\n(Queue / Scheduler / Snapshots)"]
+    subgraph RustWorkspace["Rust Shared Core Workspace"]
+        Engine["mdm-engine\n(Segmentation, Sockets, Checkpoints)"]
+        MobileCore["mdm-mobile\n(Queue Scheduler & Snapshots)"]
         Engine --> MobileCore
         DesktopApp["mdm-app\n(Desktop egui GUI)"]
         Engine --> DesktopApp
@@ -118,7 +228,7 @@ flowchart TD
         JNI["MdmNativeBridge\n(JNI Wrapper)"]
         AndroidRepo["DownloadRepositoryImpl"]
         AndroidService["DownloadForegroundService\n(Ongoing Notification)"]
-        AndroidUI["MainActivity & Compose UI"]
+        AndroidUI["Compose UI & ViewModels"]
         
         JNI --> AndroidRepo
         AndroidRepo --> AndroidUI
@@ -129,7 +239,7 @@ flowchart TD
         CABI["MdmMobileFFI\n(Swift C-ABI Wrapper)"]
         IOSRepo["DownloadRepositoryImpl"]
         BGManager["BackgroundExecutionManager\n(BGTaskScheduler)"]
-        IOSUI["DownloadListView & SwiftUI"]
+        IOSUI["SwiftUI & ViewModels"]
         
         CABI --> IOSRepo
         IOSRepo --> IOSUI
@@ -142,238 +252,115 @@ flowchart TD
 
 ---
 
-## 5. Shared Rust Mobile Core (`crates/mobile`)
+## Build & Local Development Setup
 
-Located in [`crates/mobile`](file:///home/maya/Desktop/download-manager-android/crates/mobile), this crate acts as the single source of truth for mobile download states:
+### Local Android APK Build
+The Android application can be compiled directly on any Linux/macOS machine equipped with standard Android development tools:
 
-1. **Queue Scheduling (`MobileEngine`):**
-   - Implements concurrency limiting via `set_max_concurrent_downloads(max)`.
-   - Reconciles active and waiting tasks automatically when transfers complete or fail.
-   - Spawns background tasks within a dedicated Tokio runtime.
-2. **Terminal State Preservation:**
-   - Completed (`Done`), failed (`Failed`), and aborted (`Cancelled`) downloads retain their terminal status and diagnostic errors in memory.
-   - Tasks are only purged when explicitly removed via `remove_download(id)`.
-3. **Speed & Progress Calculation:**
-   - Aggregates active connection transfer rates (`c.speed`) across all active workers.
-   - Accurately reports unavailable speed as `None` (or `-1` over C-ABI) when idle.
-4. **Resumability from Disk:**
-   - Re-checks `.mdm.json` state metadata using `mdm_engine::state::state_path` before starting transfers to continue existing part files.
-
----
-
-## 6. Native FFI Architecture
-
-### Android JNI Boundary
-
-Exported symbols adhere to standard JNI naming conventions for class `com.misterdownloadmanager.core.MdmNativeBridge`:
-
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeInit`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeSetMaxConcurrentDownloads`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeCreateDownload`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativePauseDownload`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeResumeDownload`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeCancelDownload`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeRemoveDownload`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeRestoreDownload`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeGetSnapshotJson`
-- `Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeGetAllSnapshotsJson`
-
-*Safety Principle:* Snapshot payloads are serialized to JSON on the native side and parsed using Gson in Kotlin, guaranteeing memory-safe object construction without raw pointer manipulation on Android.
-
-### iOS C-ABI Boundary
-
-Declared in [`crates/mobile/include/mdm_mobile.h`](file:///home/maya/Desktop/download-manager-android/crates/mobile/include/mdm_mobile.h):
-
-- `CMobileSnapshot`: Point-in-time data structure containing numeric IDs, total/downloaded bytes, speed (`int64_t`), state enum, and owned C-strings (`url`, `file_path`, `error`).
-- `CMobileSnapshotList`: Sized array struct containing `items`, `count`, and `capacity`.
-- `mdm_mobile_free_snapshot`: Releases allocated strings for a single snapshot.
-- `mdm_mobile_free_snapshot_list`: Reconstructs the allocated `Vec` using original `count` and `capacity`, freeing all nested strings and backing buffers safely.
-- **Panic Boundary:** Every C-ABI function wraps execution inside `std::panic::catch_unwind` to prevent panics from crossing the foreign function boundary.
-
----
-
-## 7. Android Native Application (`android/`)
-
-The Android application is organized into Clean Architecture layers:
-
-- **Presentation:** Jetpack Compose (`MainActivity.kt`, Material 3 design system) observing `StateFlow` streams from `MainViewModel`.
-- **Domain Layer:** Pure Kotlin models (`DownloadTask`, `DownloadState`), use cases (`DownloadUseCases`), and repository interface (`DownloadRepository`).
-- **Data Layer:** `DownloadRepositoryImpl` delegating operations to `MdmNativeBridge` over `Dispatchers.IO`.
-- **Foreground Service (`DownloadForegroundService`):**
-  - Starts an ongoing notification with progress bars and transfer statistics.
-  - Declares `android:foregroundServiceType="dataSync"` in [`AndroidManifest.xml`](file:///home/maya/Desktop/download-manager-android/android/app/src/main/AndroidManifest.xml) to comply with Android 14+ background execution policies.
-  - Automatically shuts down when no downloads remain in progress.
-
----
-
-## 8. iOS Native Application (`ios/`)
-
-The iOS application is written in Swift using SwiftUI and Combine:
-
-- **Presentation:** `DownloadListView`, `DownloadRowView`, and `AddDownloadSheet` with dynamic progress bars.
-- **ViewModel:** `DownloadListViewModel` (marked `@MainActor`) polling and publishing state via Combine.
-- **Domain / Data:** `DownloadRepositoryImpl` wrapping `MdmMobileFFI` calls and mapping return codes to Swift `Error` types.
-- **Background Handling (`BackgroundExecutionManager`):**
-  - Registers task identifier `com.misterdownloadmanager.refresh` with `BGTaskScheduler`.
-  - Schedules background app refreshes to query the download queue and check task states when the app is in the background.
-
----
-
-## 9. Build and Development Setup
-
-### Prerequisites
-
-1. **Rust:** Rust 1.95+ or 1.100+ (cargo, rustc).
-2. **Android Development:**
-   - Android SDK (API 26+)
-   - Android NDK (r27+ tested, path: `/home/maya/Android/Sdk/ndk/27.1.12297006`)
-   - Java 17 JDK (`javac 17.0.20.1`)
-   - Rust Android Targets:
-     ```bash
-     rustup target add aarch64-linux-android x86_64-linux-android
-     ```
-3. **iOS Development:**
-   - macOS host with Xcode 15+ and Command Line Tools
-   - Rust Apple Targets:
-     ```bash
-     rustup target add aarch64-apple-ios x86_64-apple-ios
-     ```
-
----
-
-## 10. Verified Build & Verification Commands
-
-All commands below have been tested and verified in the environment:
-
-### 1. Verify Original Desktop App & Workspace
-```bash
-# Verify desktop egui application compatibility
-cargo check -p mdm-app
-```
-
-### 2. Run Mobile Core Tests & FFI Safety Suite
-```bash
-# Run unit tests and C-ABI memory safety test
-cargo test -p mdm-mobile
-
-# Run test suite with Android JNI feature enabled
-cargo test -p mdm-mobile --features jni
-```
-
-### 3. Build Android Native Libraries (`.so`)
-```bash
-# Compile release binaries for arm64-v8a and x86_64 and copy to jniLibs
-./tools/build-android-libs.sh
-```
-
-### 4. ## Build and Run Android APK Locally
-
-The Android application can be built locally without Docker or cloud services.
-
-### Prerequisites
-
-- Java JDK 17
-- Rust stable toolchain
-- Android SDK
-- Android NDK 27.1.12297006
-- Android Rust targets:
-  - `aarch64-linux-android`
-  - `x86_64-linux-android`
-- Node.js and npm
-
-### 1. Configure the environment
-
-```bash
-export JAVA_HOME=/usr/lib/jvm/java-17-temurin-jdk
-export ANDROID_HOME=$HOME/Android/Sdk
-export ANDROID_SDK_ROOT=$ANDROID_HOME
-export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.1.12297006
-
-export PATH=$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-```
-
-### 2. Build native Rust libraries
-
-```bash
-npm run build:libs
-```
-
-This compiles the `mdm-mobile` Rust package with JNI support for:
-
-- `arm64-v8a`
-- `x86_64`
-
-### 3. Build the Android APK
-
-```bash
-npm run apk
-```
-
-The Debug APK is expected at:
-
-```text
-android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-### 4. Install on an Android device
-
-Enable USB Debugging, connect the device, and check the connection:
-
-```bash
-adb devices
-```
-
-Install the APK:
-
-```bash
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-### 5. Launch and inspect the application
-
-Launch the application using its verified application ID and launcher Activity.
-
-View application logs:
-
-```bash
-adb logcat
-```
-
-Filter logs using the actual application logging tags.
-
-### Notes
-
-- The Android build uses the existing Rust engine through JNI.
-- Docker is not required for local APK builds.
-- iOS is outside the current Android-only project scope.
-- A successful APK compilation does not by itself verify runtime functionality.
-
-### 5. Build iOS Static Library (`.a`)
-```bash
-# Run cross-compilation script (requires macOS for linking)
-./tools/build-ios-libs.sh
-```
-
----
-
-## 11. Testing and Quality Assurance
-
-The mobile test suite ([`crates/mobile/tests/integration_test.rs`](file:///home/maya/Desktop/download-manager-android/crates/mobile/tests/integration_test.rs)) verifies:
-
-1. **Queue Concurrency & Ordering:** Verifies concurrency caps, priority scheduling, manual pause/resume, cancellation, and download removal.
-2. **C-ABI Allocation & Memory Safety:**
-   - Verifies `CMobileSnapshot` string allocations and freeing.
-   - Verifies `CMobileSnapshotList` capacity tracking and deallocation without leaks.
-   - Tests null-pointer resilience across FFI boundaries.
-3. **Symbol Export Verification:**
+1. **Configure Environment Variables:**
    ```bash
-   nm -D android/app/src/main/jniLibs/arm64-v8a/libmdm_mobile.so | grep -E "Java_|mdm_mobile"
+   export JAVA_HOME="/path/to/java-17"
+   export ANDROID_HOME="$HOME/Android/Sdk"
+   export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.1.12297006"
+   export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
    ```
-   Confirms all JNI and C-ABI entry points are present and exported as dynamic text symbols.
+
+2. **Add Rust Android Targets:**
+   ```bash
+   rustup target add aarch64-linux-android x86_64-linux-android
+   ```
+
+3. **Build Native JNI Libraries:**
+   ```bash
+   npm run build:libs
+   # or: bash tools/build-android-libs.sh
+   ```
+
+4. **Build Android Debug APK:**
+   ```bash
+   npm run apk
+   # Output located at: android/app/build/outputs/apk/debug/app-debug.apk
+   ```
+
+5. **Install on Connected Device / Emulator:**
+   ```bash
+   adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+   ```
 
 ---
 
-## 12. Download Lifecycle and Queue State Machine
+### Docker Build Pipeline
+If you prefer building without configuring Android SDK/NDK dependencies on your host machine, utilize the Docker Compose pipeline:
+
+```bash
+# Build complete pipeline and export artifacts to ./build-output/
+docker compose up --build
+```
+
+Target individual stages:
+```bash
+# Compile Android native .so libraries only
+docker compose up --build android-libs
+
+# Compile Android APKs only
+docker compose up --build android-app
+```
+
+*For complete details, see [Docker Build Pipeline Documentation](docs/DOCKER_BUILD.md).*
+
+---
+
+### Desktop App Build
+Compile and run the native desktop application on Windows, Linux, or macOS:
+
+```bash
+# Check code compatibility
+cargo check -p mdm-app
+
+# Build and launch desktop app
+cargo run -p mdm-app
+```
+
+---
+
+### iOS Setup
+1. Cross-compile the Rust static library for iOS:
+   ```bash
+   rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
+   ./tools/build-ios-libs.sh
+   ```
+2. Open the Xcode project located at `ios/MisterDownloadManager/MisterDownloadManager.xcodeproj`.
+
+---
+
+## Contributing & Code Standards (المساهمات)
+
+We welcome community contributions! Please review our [**CONTRIBUTING.md**](CONTRIBUTING.md) guide before submitting a pull request.
+
+### Pre-PR Verification Suite
+Before opening a Pull Request, ensure that all automated checks pass locally:
+
+```bash
+# 1. Format verification
+cargo fmt --all --check
+
+# 2. Strict Clippy lint check
+cargo clippy --workspace --all-targets -- -D warnings
+
+# 3. Test suite execution
+cargo test --workspace
+
+# 4. English catalog synchronization
+python tools/i18n/extract.py
+git diff --exit-code -- i18n/en.tsv
+
+# 5. Browser extension test suite
+node tools/extension/test.mjs
+```
+
+---
+
+## Download Lifecycle State Machine
 
 ```mermaid
 stateDiagram-v2
@@ -402,43 +389,20 @@ stateDiagram-v2
 
 ---
 
-## 13. Storage, Part Files, and State Recovery
+## Troubleshooting
 
-- **Part Files:** While downloading, content is streamed directly into `<dest>.part` files via sparse allocation.
-- **State Metadata:** Transfer checkpoints and HTTP resume validators (ETags, Last-Modified) are written to `<dest>.mdm.json` using atomic syncs.
-- **Completion Renaming:** When completed and integrity-verified, the `.part` file is renamed atomically to its target destination and the `.mdm.json` file is cleaned up.
-- **Android Storage:** Downloads are saved within app-specific external storage (`getExternalFilesDir`) or via Storage Access Framework URIs.
-- **iOS Storage:** Downloads are saved into the app's sandboxed `Documents` directory.
-
----
-
-## 14. Troubleshooting Common Issues
-
-### 1. `UnsatisfiedLinkError` on Android
-- **Cause:** `libmdm_mobile.so` is missing for the active device ABI.
-- **Resolution:** Run `./tools/build-android-libs.sh` to generate libraries under `android/app/src/main/jniLibs/arm64-v8a` and `x86_64`.
-
-### 2. Missing target crate for `core` / `std`
-- **Cause:** Android cross-compilation targets are not installed in the local toolchain.
-- **Resolution:** Run `rustup target add aarch64-linux-android x86_64-linux-android`.
-
-### 3. Missing `rquickjs-sys` Android bindings
-- **Cause:** `rquickjs-sys` does not bundle pre-generated C headers for `aarch64-linux-android`.
-- **Resolution:** The build script and cargo cache supply standard linux-gnu ABI bindings compatible with Android Bionic.
+1. **`UnsatisfiedLinkError` on Android:**  
+   Ensure native libraries are compiled and present in `android/app/src/main/jniLibs/arm64-v8a/libmdm_mobile.so`. Run `npm run build:libs` to compile them.
+2. **Missing Android Targets in Rust:**  
+   Execute `rustup target add aarch64-linux-android x86_64-linux-android`.
+3. **Android Studio SDK Path:**  
+   If Android Studio complains about missing SDK, set `sdk.dir` in `android/local.properties` (note: `local.properties` is safely ignored by Git).
 
 ---
 
-## 15. Known Limitations and Roadmap
+## Attribution & License
 
-- **BitTorrent on Mobile:** BitTorrent downloading (`crates/torrent`) is functional on Desktop, but disabled in the mobile core to minimize binary footprints and battery drain.
-- **iOS Background Transfer Limitations:** iOS suspends non-foreground apps after a short grace period; `BGTaskScheduler` periodically checks progress, but sustained multi-gigabyte transfers in background require future URLSession background session bridging.
-- **Android Scoped Storage:** Advanced integration with Android's MediaStore and SAF folder tree selection is currently scaffolded.
-
----
-
-## 16. References and Upstream Attribution
-
-- Upstream Project: Mister Download Manager v0.5.2
-- Original Author: Ahmed Nefzaoui
-- Technical Architecture Reference: [`docs/MOBILE_ARCHITECTURE.md`](file:///home/maya/Desktop/download-manager-android/docs/MOBILE_ARCHITECTURE.md)
-- License: GNU General Public License v3.0 or later ([`LICENSE`](file:///home/maya/Desktop/download-manager-android/LICENSE))
+- **Upstream Project:** Mister Download Manager v0.5.2
+- **Original Author:** Ahmed Nefzaoui
+- **License:** [GNU General Public License v3.0 or later (GPL-3.0-or-later)](LICENSE)
+- **Technical Reference:** [Mobile Architecture Specification](docs/MOBILE_ARCHITECTURE.md)

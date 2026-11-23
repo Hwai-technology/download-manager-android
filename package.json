@@ -3,9 +3,10 @@
   "version": "0.5.2",
   "description": "Mister Download Manager - Native Mobile (Android & iOS)",
   "scripts": {
-    "apk": "bash tools/build-local-apk.sh",
-    "build:android": "bash tools/build-local-apk.sh",
-    "build:libs": "bash tools/build-android-libs.sh",
+    "apk": "bash scripts/build-android-apk.sh",
+    "build:android": "bash scripts/build-android-apk.sh",
+    "build:libs": "bash scripts/build-android-libs.sh",
+    "build:ios": "bash scripts/build-ios-libs.sh",
     "docker:build": "docker compose up --build"
   },
   "keywords": [
