@@ -22,11 +22,17 @@ public struct MainTabView: View {
                 }
                 .tag(1)
 
+            SpeedTestScreen()
+                .tabItem {
+                    Label("Speed Test", systemImage: "network")
+                }
+                .tag(2)
+
             SettingsScreen()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }
-                .tag(2)
+                .tag(3)
         }
         .accentColor(MDMTheme.electricBlue)
     }

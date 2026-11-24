@@ -103,4 +103,20 @@
     <string name="state_done">Completed</string>
     <string name="state_failed">Failed</string>
     <string name="state_cancelled">Cancelled</string>
+
+    <!-- Speed Test -->
+    <string name="nav_speed_test">Speed Test</string>
+    <string name="speed_test_title">Internet Speed Test</string>
+    <string name="speed_test_ping">Ping</string>
+    <string name="speed_test_jitter">Jitter</string>
+    <string name="speed_test_download">Download</string>
+    <string name="speed_test_upload">Upload</string>
+    <string name="speed_test_start">Start Speed Test</string>
+    <string name="speed_test_retest">Test Again</string>
+    <string name="speed_test_cancel">Cancel Test</string>
+    <string name="speed_test_status_idle">Ready to Test</string>
+    <string name="speed_test_status_ping">Measuring Ping &amp; Jitter…</string>
+    <string name="speed_test_status_download">Testing Download Speed…</string>
+    <string name="speed_test_status_upload">Testing Upload Speed…</string>
+    <string name="speed_test_status_complete">Test Completed</string>
 </resources>

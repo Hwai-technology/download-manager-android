@@ -18,11 +18,13 @@ import androidx.compose.ui.unit.dp
 import com.misterdownloadmanager.R
 import com.misterdownloadmanager.data.repository.DownloadRepositoryImpl
 import com.misterdownloadmanager.domain.model.DownloadTask
+import com.misterdownloadmanager.domain.speedtest.SpeedTestManager
 import com.misterdownloadmanager.domain.usecase.DownloadUseCases
 import com.misterdownloadmanager.presentation.ui.component.*
 import com.misterdownloadmanager.presentation.ui.screen.DashboardScreen
 import com.misterdownloadmanager.presentation.ui.screen.DownloadsScreen
 import com.misterdownloadmanager.presentation.ui.screen.SettingsScreen
+import com.misterdownloadmanager.presentation.ui.screen.SpeedTestScreen
 import com.misterdownloadmanager.presentation.ui.theme.MdmTheme
 import com.misterdownloadmanager.presentation.ui.theme.ThemeMode
 import com.misterdownloadmanager.presentation.viewmodel.MainViewModel
@@ -30,7 +32,7 @@ import com.misterdownloadmanager.service.DownloadForegroundService
 import com.misterdownloadmanager.util.FileUtils
 
 enum class NavTab {
-    DASHBOARD, DOWNLOADS, SETTINGS
+    DASHBOARD, DOWNLOADS, SPEED_TEST, SETTINGS
 }
 
 class MainActivity : ComponentActivity() {
@@ -101,6 +103,7 @@ fun MainAppScaffold(
 ) {
     val context = LocalContext.current
     var currentTab by remember { mutableStateOf(NavTab.DASHBOARD) }
+    val speedTestManager = remember { SpeedTestManager() }
 
     val downloads by viewModel.downloads.collectAsState()
     val totalSpeed by viewModel.totalSpeedBytesPerSec.collectAsState()
@@ -134,6 +137,7 @@ fun MainAppScaffold(
                         text = when (currentTab) {
                             NavTab.DASHBOARD -> stringResource(R.string.app_name)
                             NavTab.DOWNLOADS -> stringResource(R.string.nav_downloads)
+                            NavTab.SPEED_TEST -> stringResource(R.string.speed_test_title)
                             NavTab.SETTINGS -> stringResource(R.string.nav_settings)
                         },
                         style = MaterialTheme.typography.titleLarge
@@ -181,6 +185,19 @@ fun MainAppScaffold(
                     )
                 )
                 NavigationBarItem(
+                    selected = currentTab == NavTab.SPEED_TEST,
+                    onClick = { currentTab = NavTab.SPEED_TEST },
+                    icon = { Icon(Icons.Default.NetworkCheck, contentDescription = null) },
+                    label = { Text(stringResource(R.string.nav_speed_test)) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+                NavigationBarItem(
                     selected = currentTab == NavTab.SETTINGS,
                     onClick = { currentTab = NavTab.SETTINGS },
                     icon = { Icon(Icons.Default.Settings, contentDescription = null) },
@@ -196,7 +213,7 @@ fun MainAppScaffold(
             }
         },
         floatingActionButton = {
-            if (currentTab != NavTab.SETTINGS) {
+            if (currentTab != NavTab.SETTINGS && currentTab != NavTab.SPEED_TEST) {
                 FloatingActionButton(
                     onClick = { showAddDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -260,6 +277,9 @@ fun MainAppScaffold(
                         onRemoveRequest = { taskToDelete = it },
                         onDetailsRequest = { taskForDetails = it }
                     )
+                }
+                NavTab.SPEED_TEST -> {
+                    SpeedTestScreen(speedTestManager = speedTestManager)
                 }
                 NavTab.SETTINGS -> {
                     SettingsScreen(

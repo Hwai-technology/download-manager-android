@@ -103,5 +103,21 @@
     <string name="state_done">مكتمل</string>
     <string name="state_failed">تعثر التنزيل</string>
     <string name="state_cancelled">ملغى</string>
+
+    <!-- Speed Test -->
+    <string name="nav_speed_test">السرعة</string>
+    <string name="speed_test_title">فحص سرعة الإنترنت</string>
+    <string name="speed_test_ping">الاستجابة</string>
+    <string name="speed_test_jitter">التذبذب</string>
+    <string name="speed_test_download">التنزيل</string>
+    <string name="speed_test_upload">الرفع</string>
+    <string name="speed_test_start">بدء فحص السرعة</string>
+    <string name="speed_test_retest">إعادة الفحص</string>
+    <string name="speed_test_cancel">إلغاء الفحص</string>
+    <string name="speed_test_status_idle">جاهز للفحص</string>
+    <string name="speed_test_status_ping">قياس زمن الاستجابة والتذبذب…</string>
+    <string name="speed_test_status_download">قياس سرعة التنزيل…</string>
+    <string name="speed_test_status_upload">قياس سرعة الرفع…</string>
+    <string name="speed_test_status_complete">اكتمل الفحص بنجاح</string>
 </resources>
 
