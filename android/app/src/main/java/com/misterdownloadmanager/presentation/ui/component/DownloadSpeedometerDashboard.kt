@@ -27,10 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.misterdownloadmanager.R
-import com.misterdownloadmanager.presentation.ui.theme.DarkAccentCyan
-import com.misterdownloadmanager.presentation.ui.theme.DarkPrimary
-import com.misterdownloadmanager.presentation.ui.theme.LightAccentCyan
-import com.misterdownloadmanager.presentation.ui.theme.LightPrimary
+import com.misterdownloadmanager.presentation.ui.theme.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -247,19 +244,19 @@ fun DownloadSpeedometerDashboard(
                 title = stringResource(R.string.filter_active),
                 value = "$activeDownloadsCount",
                 modifier = Modifier.weight(1f),
-                highlightColor = primaryColor
+                highlightColor = StateDownloading
             )
             MetricTile(
                 title = stringResource(R.string.filter_queued),
                 value = "$queuedDownloadsCount",
                 modifier = Modifier.weight(1f),
-                highlightColor = surfaceBorder
+                highlightColor = StateWaiting
             )
             MetricTile(
                 title = stringResource(R.string.filter_completed),
                 value = "$completedDownloadsCount",
                 modifier = Modifier.weight(1f),
-                highlightColor = accentColor
+                highlightColor = StateDone
             )
             val totalFormatted = remember(totalDownloadedBytes) {
                 formatByteSize(totalDownloadedBytes)
@@ -268,7 +265,7 @@ fun DownloadSpeedometerDashboard(
                 title = stringResource(R.string.dashboard_total_data_label),
                 value = totalFormatted,
                 modifier = Modifier.weight(1.3f),
-                highlightColor = MaterialTheme.colorScheme.secondary
+                highlightColor = DarkAccentCyan
             )
         }
     }
@@ -283,8 +280,8 @@ fun MetricTile(
 ) {
     Box(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+            .background(highlightColor.copy(alpha = 0.08f), RoundedCornerShape(10.dp))
+            .border(1.dp, highlightColor.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
             .padding(horizontal = 8.dp, vertical = 10.dp)
     ) {
         Column(
@@ -295,7 +292,7 @@ fun MetricTile(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = highlightColor,
                 maxLines = 1
             )
             Spacer(modifier = Modifier.height(2.dp))

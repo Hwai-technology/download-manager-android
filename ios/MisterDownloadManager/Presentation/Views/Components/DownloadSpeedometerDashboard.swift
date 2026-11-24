@@ -24,6 +24,18 @@ public struct SpeedometerGaugeView: View {
         return min(max(Double(speedBytesPerSec) / maxRefSpeed, 0.0), 1.0)
     }
 
+    private var formattedTotal: String {
+        if totalDownloadedBytes >= 1024 * 1024 * 1024 {
+            return String(format: "%.1f GB", Double(totalDownloadedBytes) / (1024.0 * 1024.0 * 1024.0))
+        } else if totalDownloadedBytes >= 1024 * 1024 {
+            return String(format: "%.1f MB", Double(totalDownloadedBytes) / (1024.0 * 1024.0))
+        } else if totalDownloadedBytes >= 1024 {
+            return "\(totalDownloadedBytes / 1024) KB"
+        } else {
+            return "\(totalDownloadedBytes) B"
+        }
+    }
+
     public var body: some View {
         VStack(spacing: 16) {
             // Speedometer Arc
@@ -66,11 +78,12 @@ public struct SpeedometerGaugeView: View {
             }
             .frame(height: 130)
 
-            // Statistics Grid (Cards)
-            HStack(spacing: 10) {
+            // Statistics Grid (4 Metric Tiles Matching Android)
+            HStack(spacing: 8) {
                 StatCard(title: "Active", count: "\(activeCount)", color: MDMTheme.stateDownloading, icon: "arrow.down")
                 StatCard(title: "Queued", count: "\(queuedCount)", color: MDMTheme.stateWaiting, icon: "clock")
                 StatCard(title: "Done", count: "\(completedCount)", color: MDMTheme.stateDone, icon: "checkmark.circle")
+                StatCard(title: "Total", count: formattedTotal, color: MDMTheme.speedCyan, icon: "externaldrive")
             }
         }
         .padding(18)
@@ -92,7 +105,7 @@ struct StatCard: View {
     let icon: String
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.caption2)
@@ -102,12 +115,19 @@ struct StatCard: View {
                     .foregroundColor(.secondary)
             }
             Text(count)
-                .font(.title3.bold())
-                .foregroundColor(.primary)
+                .font(.subheadline.bold())
+                .foregroundColor(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(color.opacity(0.1))
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
+        .background(color.opacity(0.08))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(color.opacity(0.25), lineWidth: 1)
+        )
         .cornerRadius(10)
     }
 }

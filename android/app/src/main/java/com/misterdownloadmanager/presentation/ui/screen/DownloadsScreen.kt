@@ -86,7 +86,7 @@ fun DownloadsScreen(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             placeholder = { Text(stringResource(R.string.search_placeholder)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
             trailingIcon = {
                 if (searchQuery.isNotBlank()) {
                     IconButton(onClick = { searchQuery = "" }) {
@@ -96,6 +96,12 @@ fun DownloadsScreen(
             },
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            ),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -171,7 +177,7 @@ fun DownloadsScreen(
                     Icon(
                         imageVector = if (searchQuery.isNotBlank()) Icons.Default.SearchOff else Icons.Default.CloudDownload,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                         modifier = Modifier.size(56.dp)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -247,9 +253,9 @@ fun CategoryChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val bg = if (selected) MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    val textCol = if (selected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
-    val borderCol = if (selected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+    val bg = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface
+    val textCol = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderCol = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
 
     Box(
         modifier = Modifier
