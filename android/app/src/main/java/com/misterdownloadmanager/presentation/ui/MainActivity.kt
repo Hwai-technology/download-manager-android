@@ -23,6 +23,7 @@ import com.misterdownloadmanager.domain.usecase.DownloadUseCases
 import com.misterdownloadmanager.presentation.ui.component.*
 import com.misterdownloadmanager.presentation.ui.screen.DashboardScreen
 import com.misterdownloadmanager.presentation.ui.screen.DownloadsScreen
+import com.misterdownloadmanager.presentation.ui.screen.PlaylistsScreen
 import com.misterdownloadmanager.presentation.ui.screen.SettingsScreen
 import com.misterdownloadmanager.presentation.ui.screen.SpeedTestScreen
 import com.misterdownloadmanager.presentation.ui.theme.MdmTheme
@@ -32,7 +33,7 @@ import com.misterdownloadmanager.service.DownloadForegroundService
 import com.misterdownloadmanager.util.FileUtils
 
 enum class NavTab {
-    DASHBOARD, DOWNLOADS, SPEED_TEST, SETTINGS
+    DASHBOARD, DOWNLOADS, PLAYLISTS, SPEED_TEST, SETTINGS
 }
 
 class MainActivity : ComponentActivity() {
@@ -111,6 +112,7 @@ fun MainAppScaffold(
     val queuedCount by viewModel.queuedDownloadsCount.collectAsState()
     val completedCount by viewModel.completedDownloadsCount.collectAsState()
     val totalDownloaded by viewModel.totalDownloadedBytes.collectAsState()
+    val playlists by viewModel.playlists.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -120,6 +122,8 @@ fun MainAppScaffold(
     var taskToDelete by remember { mutableStateOf<DownloadTask?>(null) }
     // Dialog state for Task Details
     var taskForDetails by remember { mutableStateOf<DownloadTask?>(null) }
+    // Dialog state for Playlist Details
+    var playlistForDetails by remember { mutableStateOf<com.misterdownloadmanager.domain.model.PlaylistTask?>(null) }
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
@@ -137,6 +141,7 @@ fun MainAppScaffold(
                         text = when (currentTab) {
                             NavTab.DASHBOARD -> stringResource(R.string.app_name)
                             NavTab.DOWNLOADS -> stringResource(R.string.nav_downloads)
+                            NavTab.PLAYLISTS -> stringResource(R.string.playlists_title)
                             NavTab.SPEED_TEST -> stringResource(R.string.speed_test_title)
                             NavTab.SETTINGS -> stringResource(R.string.nav_settings)
                         },
@@ -176,6 +181,19 @@ fun MainAppScaffold(
                     onClick = { currentTab = NavTab.DOWNLOADS },
                     icon = { Icon(Icons.Default.Download, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_downloads)) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+                NavigationBarItem(
+                    selected = currentTab == NavTab.PLAYLISTS,
+                    onClick = { currentTab = NavTab.PLAYLISTS },
+                    icon = { Icon(Icons.Default.FeaturedPlayList, contentDescription = null) },
+                    label = { Text(stringResource(R.string.nav_playlists)) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,
                         selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -278,6 +296,29 @@ fun MainAppScaffold(
                         onDetailsRequest = { taskForDetails = it }
                     )
                 }
+                NavTab.PLAYLISTS -> {
+                    PlaylistsScreen(
+                        playlists = playlists,
+                        onStart = {
+                            viewModel.startPlaylist(it)
+                            onStartService()
+                        },
+                        onPause = { viewModel.pausePlaylist(it) },
+                        onResume = {
+                            viewModel.resumePlaylist(it)
+                            onStartService()
+                        },
+                        onCancel = { viewModel.cancelPlaylist(it) },
+                        onRetryFailed = {
+                            viewModel.retryFailedPlaylist(it)
+                            onStartService()
+                        },
+                        onRemove = { id, deleteFiles ->
+                            viewModel.removePlaylist(id, deleteFiles)
+                        },
+                        onSelectPlaylist = { playlistForDetails = it }
+                    )
+                }
                 NavTab.SPEED_TEST -> {
                     SpeedTestScreen(speedTestManager = speedTestManager)
                 }
@@ -302,6 +343,11 @@ fun MainAppScaffold(
                     viewModel.addDownload(url, dest)
                     onStartService()
                     showAddDialog = false
+                },
+                onConfirmPlaylist = { url, destDir, title ->
+                    viewModel.addPlaylist(url, destDir, title)
+                    onStartService()
+                    showAddDialog = false
                 }
             )
         }
@@ -324,6 +370,16 @@ fun MainAppScaffold(
             DownloadDetailsDialog(
                 task = task,
                 onDismiss = { taskForDetails = null }
+            )
+        }
+
+        // Playlist Details Dialog
+        playlistForDetails?.let { pl ->
+            // Keep updated state from playlists
+            val currentPl = playlists.find { it.id == pl.id } ?: pl
+            PlaylistDetailsDialog(
+                playlist = currentPl,
+                onDismiss = { playlistForDetails = null }
             )
         }
     }

@@ -143,5 +143,37 @@ object FileUtils {
             Result.failure(e)
         }
     }
+
+    fun formatFileSize(bytes: Long): String {
+        return when {
+            bytes >= 1024L * 1024L * 1024L -> String.format("%.2f GB", bytes.toDouble() / (1024.0 * 1024.0 * 1024.0))
+            bytes >= 1024L * 1024L -> String.format("%.1f MB", bytes.toDouble() / (1024.0 * 1024.0))
+            bytes >= 1024L -> String.format("%.0f KB", bytes.toDouble() / 1024.0)
+            bytes > 0 -> "$bytes B"
+            else -> "0 B"
+        }
+    }
+
+    fun formatSpeed(bytesPerSec: Long): String {
+        return when {
+            bytesPerSec >= 1024L * 1024L * 1024L -> String.format("%.2f GB/s", bytesPerSec.toDouble() / (1024.0 * 1024.0 * 1024.0))
+            bytesPerSec >= 1024L * 1024L -> String.format("%.1f MB/s", bytesPerSec.toDouble() / (1024.0 * 1024.0))
+            bytesPerSec >= 1024L -> String.format("%.0f KB/s", bytesPerSec.toDouble() / 1024.0)
+            bytesPerSec > 0 -> "$bytesPerSec B/s"
+            else -> "0 B/s"
+        }
+    }
+
+    fun formatDuration(seconds: Long): String {
+        val s = seconds.coerceAtLeast(0)
+        val hrs = s / 3600
+        val mins = (s % 3600) / 60
+        val secs = s % 60
+        return if (hrs > 0) {
+            String.format("%02d:%02d:%02d", hrs, mins, secs)
+        } else {
+            String.format("%02d:%02d", mins, secs)
+        }
+    }
 }
 

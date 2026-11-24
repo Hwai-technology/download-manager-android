@@ -124,9 +124,14 @@ public struct DownloadsScreen: View {
                 }
             }
             .sheet(isPresented: $showingAddSheet) {
-                AddDownloadDialog { url, dest in
-                    viewModel.addDownload(url: url, destPath: dest)
-                }
+                AddDownloadDialog(
+                    onAdd: { url, dest in
+                        viewModel.addDownload(url: url, destPath: dest)
+                    },
+                    onAddPlaylist: { url, destDir, title in
+                        viewModel.addPlaylist(url: url, destDir: destDir, title: title)
+                    }
+                )
             }
             .sheet(item: $taskForDetails) { task in
                 DownloadDetailsDialog(task: task)

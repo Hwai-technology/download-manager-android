@@ -119,4 +119,25 @@
     <string name="speed_test_status_download">Testing Download Speed…</string>
     <string name="speed_test_status_upload">Testing Upload Speed…</string>
     <string name="speed_test_status_complete">Test Completed</string>
+
+    <!-- Playlists -->
+    <string name="nav_playlists">Playlists</string>
+    <string name="playlists_title">Playlists</string>
+    <string name="empty_playlists_title">No playlists yet</string>
+    <string name="empty_playlists_subtitle">Add a playlist URL (YouTube, M3U/M3U8) to download all items</string>
+    <string name="playlist_items_count">%1$d of %2$d items</string>
+    <string name="playlist_speed_eta">%1$s • ETA: %2$s</string>
+    <string name="playlist_status_scanning">Scanning…</string>
+    <string name="playlist_status_ready">Ready</string>
+    <string name="playlist_status_downloading">Downloading (%1$d active)</string>
+    <string name="playlist_status_paused">Paused</string>
+    <string name="playlist_status_completed">Completed</string>
+    <string name="playlist_status_completed_errors">Completed with errors</string>
+    <string name="playlist_status_failed">Failed</string>
+    <string name="playlist_status_cancelled">Cancelled</string>
+    <string name="playlist_dialog_title">New Playlist</string>
+    <string name="playlist_detected_banner">Playlist detected (%1$d items)</string>
+    <string name="playlist_action_retry_failed">Retry Failed Items</string>
+    <string name="playlist_detail_title">Playlist Details</string>
+    <string name="playlist_items_tab">Items</string>
 </resources>

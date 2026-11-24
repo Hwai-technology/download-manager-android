@@ -17,11 +17,18 @@ class DownloadRepositoryImpl(
     private val _downloadsFlow = MutableStateFlow<List<DownloadTask>>(emptyList())
     override fun getDownloadsFlow(): Flow<List<DownloadTask>> = _downloadsFlow.asStateFlow()
 
+    private val _playlistsFlow = MutableStateFlow<List<com.misterdownloadmanager.domain.model.PlaylistTask>>(emptyList())
+    override fun getPlaylistsFlow(): Flow<List<com.misterdownloadmanager.domain.model.PlaylistTask>> = _playlistsFlow.asStateFlow()
+
     init {
-        // Initial load of restored downloads
+        // Initial load of restored downloads and playlists
         val initialList = MdmNativeBridge.getAllSnapshots()
         if (initialList.isNotEmpty()) {
             _downloadsFlow.value = initialList
+        }
+        val initialPlaylists = MdmNativeBridge.getAllPlaylists()
+        if (initialPlaylists.isNotEmpty()) {
+            _playlistsFlow.value = initialPlaylists
         }
     }
 
@@ -79,5 +86,102 @@ class DownloadRepositoryImpl(
     override suspend fun refreshSnapshots() = withContext(ioDispatcher) {
         val list = MdmNativeBridge.getAllSnapshots()
         _downloadsFlow.value = list
+    }
+
+    // --- Playlist Operations ---
+
+    override fun isPlaylistUrl(url: String): Boolean =
+        MdmNativeBridge.isPlaylistUrl(url)
+
+    override suspend fun discoverPlaylist(url: String): Result<com.misterdownloadmanager.domain.model.DiscoveredPlaylistDto> =
+        withContext(ioDispatcher) {
+            val disc = MdmNativeBridge.discoverPlaylist(url)
+            if (disc != null) {
+                Result.success(disc)
+            } else {
+                Result.failure(IllegalStateException("Failed to discover playlist at URL: $url"))
+            }
+        }
+
+    override suspend fun createPlaylist(url: String, destDir: String, title: String?): Result<Long> =
+        withContext(ioDispatcher) {
+            val id = MdmNativeBridge.createPlaylist(url, destDir, title)
+            if (id > 0) {
+                refreshPlaylists()
+                Result.success(id)
+            } else {
+                Result.failure(IllegalStateException("Failed to create playlist (code: $id)"))
+            }
+        }
+
+    override suspend fun startPlaylist(id: Long): Result<Unit> = withContext(ioDispatcher) {
+        val success = MdmNativeBridge.startPlaylist(id)
+        if (success) {
+            refreshPlaylists()
+            refreshSnapshots()
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Failed starting playlist with id: $id"))
+        }
+    }
+
+    override suspend fun pausePlaylist(id: Long): Result<Unit> = withContext(ioDispatcher) {
+        val success = MdmNativeBridge.pausePlaylist(id)
+        if (success) {
+            refreshPlaylists()
+            refreshSnapshots()
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Failed pausing playlist with id: $id"))
+        }
+    }
+
+    override suspend fun resumePlaylist(id: Long): Result<Unit> = withContext(ioDispatcher) {
+        val success = MdmNativeBridge.resumePlaylist(id)
+        if (success) {
+            refreshPlaylists()
+            refreshSnapshots()
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Failed resuming playlist with id: $id"))
+        }
+    }
+
+    override suspend fun cancelPlaylist(id: Long): Result<Unit> = withContext(ioDispatcher) {
+        val success = MdmNativeBridge.cancelPlaylist(id)
+        if (success) {
+            refreshPlaylists()
+            refreshSnapshots()
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Failed cancelling playlist with id: $id"))
+        }
+    }
+
+    override suspend fun retryFailedPlaylist(id: Long): Result<Unit> = withContext(ioDispatcher) {
+        val success = MdmNativeBridge.retryFailedPlaylist(id)
+        if (success) {
+            refreshPlaylists()
+            refreshSnapshots()
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Failed retrying failed items in playlist with id: $id"))
+        }
+    }
+
+    override suspend fun removePlaylist(id: Long, deleteFiles: Boolean): Result<Unit> = withContext(ioDispatcher) {
+        val success = MdmNativeBridge.removePlaylist(id, deleteFiles)
+        if (success) {
+            refreshPlaylists()
+            refreshSnapshots()
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Failed removing playlist with id: $id"))
+        }
+    }
+
+    override suspend fun refreshPlaylists() = withContext(ioDispatcher) {
+        val list = MdmNativeBridge.getAllPlaylists()
+        _playlistsFlow.value = list
     }
 }

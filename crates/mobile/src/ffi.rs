@@ -320,6 +320,171 @@ pub unsafe extern "C" fn mdm_mobile_free_snapshot_list(list: *mut CMobileSnapsho
     });
 }
 
+// ==========================================
+// C FFI: Playlist Management Functions
+// ==========================================
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_free_string(s: *mut c_char) {
+    if !s.is_null() {
+        unsafe {
+            let _ = CString::from_raw(s);
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_discover_playlist_json(url: *const c_char) -> *mut c_char {
+    let result = std::panic::catch_unwind(|| {
+        if url.is_null() {
+            return std::ptr::null_mut();
+        }
+        let url_str = match unsafe { CStr::from_ptr(url) }.to_str() {
+            Ok(s) => s,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let engine = get_or_init_engine();
+        match engine.discover_playlist(url_str) {
+            Ok(disc) => {
+                let json = serde_json::to_string(&disc).unwrap_or_default();
+                to_c_string(Some(&json))
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    });
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_create_playlist(
+    url: *const c_char,
+    dest_dir: *const c_char,
+    title: *const c_char,
+) -> i64 {
+    let result = std::panic::catch_unwind(|| {
+        if url.is_null() || dest_dir.is_null() {
+            return -1i64;
+        }
+        let url_str = match unsafe { CStr::from_ptr(url) }.to_str() {
+            Ok(s) => s,
+            Err(_) => return -2i64,
+        };
+        let dest_str = match unsafe { CStr::from_ptr(dest_dir) }.to_str() {
+            Ok(s) => s,
+            Err(_) => return -3i64,
+        };
+        let title_opt = if !title.is_null() {
+            unsafe { CStr::from_ptr(title) }.to_str().ok()
+        } else {
+            None
+        };
+        let engine = get_or_init_engine();
+        match engine.create_playlist(url_str, dest_str, title_opt, None) {
+            Ok(id) => id as i64,
+            Err(_) => -4i64,
+        }
+    });
+    result.unwrap_or(-5i64)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_start_playlist(id: u64) -> i32 {
+    let result = std::panic::catch_unwind(|| {
+        let engine = get_or_init_engine();
+        match engine.start_playlist(id) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        }
+    });
+    result.unwrap_or(-2)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_pause_playlist(id: u64) -> i32 {
+    let result = std::panic::catch_unwind(|| {
+        let engine = get_or_init_engine();
+        match engine.pause_playlist(id) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        }
+    });
+    result.unwrap_or(-2)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_resume_playlist(id: u64) -> i32 {
+    let result = std::panic::catch_unwind(|| {
+        let engine = get_or_init_engine();
+        match engine.resume_playlist(id) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        }
+    });
+    result.unwrap_or(-2)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_cancel_playlist(id: u64) -> i32 {
+    let result = std::panic::catch_unwind(|| {
+        let engine = get_or_init_engine();
+        match engine.cancel_playlist(id) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        }
+    });
+    result.unwrap_or(-2)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_retry_failed_playlist(id: u64) -> i32 {
+    let result = std::panic::catch_unwind(|| {
+        let engine = get_or_init_engine();
+        match engine.retry_failed_playlist_items(id) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        }
+    });
+    result.unwrap_or(-2)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_remove_playlist(id: u64, delete_files: i32) -> i32 {
+    let result = std::panic::catch_unwind(|| {
+        let engine = get_or_init_engine();
+        match engine.remove_playlist(id, delete_files != 0) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        }
+    });
+    result.unwrap_or(-2)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_get_playlist_snapshot_json(id: u64) -> *mut c_char {
+    let result = std::panic::catch_unwind(|| {
+        let engine = get_or_init_engine();
+        match engine.get_playlist_snapshot(id) {
+            Ok(snap) => {
+                let json = serde_json::to_string(&snap).unwrap_or_default();
+                to_c_string(Some(&json))
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    });
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_get_all_playlists_json() -> *mut c_char {
+    let result = std::panic::catch_unwind(|| {
+        let engine = get_or_init_engine();
+        let list = engine.get_all_playlists();
+        let json = serde_json::to_string(&list).unwrap_or_default();
+        to_c_string(Some(&json))
+    });
+    result.unwrap_or(std::ptr::null_mut())
+}
+
 // JNI bindings for Android (Java / Kotlin integration)
 #[cfg(feature = "jni")]
 pub mod jni_bridge {
@@ -559,6 +724,198 @@ pub mod jni_bridge {
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let engine = get_or_init_engine();
             let list = engine.get_all_snapshots();
+            let json = serde_json::to_string(&list).unwrap_or_default();
+            env.new_string(json)
+                .map(|s| s.into_raw())
+                .unwrap_or(std::ptr::null_mut())
+        }));
+        result.unwrap_or(std::ptr::null_mut())
+    }
+
+    // --- Playlist JNI functions ---
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeDiscoverPlaylistJson(
+        mut env: JNIEnv,
+        _class: JClass,
+        url: JString,
+    ) -> jstring {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let url_str: String = match env.get_string(&url) {
+                Ok(s) => s.into(),
+                Err(_) => return std::ptr::null_mut(),
+            };
+            let engine = get_or_init_engine();
+            match engine.discover_playlist(&url_str) {
+                Ok(disc) => {
+                    let json = serde_json::to_string(&disc).unwrap_or_default();
+                    env.new_string(json)
+                        .map(|s| s.into_raw())
+                        .unwrap_or(std::ptr::null_mut())
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }));
+        result.unwrap_or(std::ptr::null_mut())
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeCreatePlaylist(
+        mut env: JNIEnv,
+        _class: JClass,
+        url: JString,
+        dest_dir: JString,
+        title: JString,
+    ) -> jlong {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let url_str: String = match env.get_string(&url) {
+                Ok(s) => s.into(),
+                Err(_) => return -1 as jlong,
+            };
+            let dest_str: String = match env.get_string(&dest_dir) {
+                Ok(s) => s.into(),
+                Err(_) => return -2 as jlong,
+            };
+            let title_opt: Option<String> = if !title.is_null() {
+                env.get_string(&title).ok().map(|s| s.into())
+            } else {
+                None
+            };
+            let engine = get_or_init_engine();
+            match engine.create_playlist(&url_str, &dest_str, title_opt.as_deref(), None) {
+                Ok(id) => id as jlong,
+                Err(_) => -3 as jlong,
+            }
+        }));
+        result.unwrap_or(-4 as jlong)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeStartPlaylist(
+        _env: JNIEnv,
+        _class: JClass,
+        id: jlong,
+    ) -> jint {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = get_or_init_engine();
+            match engine.start_playlist(id as u64) {
+                Ok(_) => 0 as jint,
+                Err(_) => -1 as jint,
+            }
+        }));
+        result.unwrap_or(-2 as jint)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativePausePlaylist(
+        _env: JNIEnv,
+        _class: JClass,
+        id: jlong,
+    ) -> jint {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = get_or_init_engine();
+            match engine.pause_playlist(id as u64) {
+                Ok(_) => 0 as jint,
+                Err(_) => -1 as jint,
+            }
+        }));
+        result.unwrap_or(-2 as jint)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeResumePlaylist(
+        _env: JNIEnv,
+        _class: JClass,
+        id: jlong,
+    ) -> jint {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = get_or_init_engine();
+            match engine.resume_playlist(id as u64) {
+                Ok(_) => 0 as jint,
+                Err(_) => -1 as jint,
+            }
+        }));
+        result.unwrap_or(-2 as jint)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeCancelPlaylist(
+        _env: JNIEnv,
+        _class: JClass,
+        id: jlong,
+    ) -> jint {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = get_or_init_engine();
+            match engine.cancel_playlist(id as u64) {
+                Ok(_) => 0 as jint,
+                Err(_) => -1 as jint,
+            }
+        }));
+        result.unwrap_or(-2 as jint)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeRetryFailedPlaylist(
+        _env: JNIEnv,
+        _class: JClass,
+        id: jlong,
+    ) -> jint {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = get_or_init_engine();
+            match engine.retry_failed_playlist_items(id as u64) {
+                Ok(_) => 0 as jint,
+                Err(_) => -1 as jint,
+            }
+        }));
+        result.unwrap_or(-2 as jint)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeRemovePlaylist(
+        _env: JNIEnv,
+        _class: JClass,
+        id: jlong,
+        delete_files: jint,
+    ) -> jint {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = get_or_init_engine();
+            match engine.remove_playlist(id as u64, delete_files != 0) {
+                Ok(_) => 0 as jint,
+                Err(_) => -1 as jint,
+            }
+        }));
+        result.unwrap_or(-2 as jint)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeGetPlaylistSnapshotJson(
+        env: JNIEnv,
+        _class: JClass,
+        id: jlong,
+    ) -> jstring {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = get_or_init_engine();
+            match engine.get_playlist_snapshot(id as u64) {
+                Ok(snap) => {
+                    let json = serde_json::to_string(&snap).unwrap_or_default();
+                    env.new_string(json)
+                        .map(|s| s.into_raw())
+                        .unwrap_or(std::ptr::null_mut())
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }));
+        result.unwrap_or(std::ptr::null_mut())
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeGetAllPlaylistsJson(
+        env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = get_or_init_engine();
+            let list = engine.get_all_playlists();
             let json = serde_json::to_string(&list).unwrap_or_default();
             env.new_string(json)
                 .map(|s| s.into_raw())

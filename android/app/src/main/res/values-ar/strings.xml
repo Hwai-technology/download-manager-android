@@ -119,5 +119,26 @@
     <string name="speed_test_status_download">قياس سرعة التنزيل…</string>
     <string name="speed_test_status_upload">قياس سرعة الرفع…</string>
     <string name="speed_test_status_complete">اكتمل الفحص بنجاح</string>
+
+    <!-- Playlists -->
+    <string name="nav_playlists">قوائم التشغيل</string>
+    <string name="playlists_title">قوائم التشغيل</string>
+    <string name="empty_playlists_title">لا توجد قوائم تشغيل</string>
+    <string name="empty_playlists_subtitle">أضف رابط قائمة تشغيل (YouTube، M3U/M3U8) لتنزيل جميع العناصر دفعة واحدة</string>
+    <string name="playlist_items_count">%1$d من أصل %2$d عنصر</string>
+    <string name="playlist_speed_eta">%1$s • الوقت المتبقي: %2$s</string>
+    <string name="playlist_status_scanning">جاري الفحص…</string>
+    <string name="playlist_status_ready">جاهز</string>
+    <string name="playlist_status_downloading">جاري التنزيل (%1$d نشط)</string>
+    <string name="playlist_status_paused">متوقف مؤقتاً</string>
+    <string name="playlist_status_completed">مكتمل</string>
+    <string name="playlist_status_completed_errors">مكتمل مع أخطاء</string>
+    <string name="playlist_status_failed">تعثر</string>
+    <string name="playlist_status_cancelled">ملغي</string>
+    <string name="playlist_dialog_title">قائمة تشغيل جديدة</string>
+    <string name="playlist_detected_banner">تم التعرف على قائمة تشغيل (%1$d عنصر)</string>
+    <string name="playlist_action_retry_failed">إعادة محاولة العناصر المتعثرة</string>
+    <string name="playlist_detail_title">تفاصيل قائمة التشغيل</string>
+    <string name="playlist_items_tab">العناصر</string>
 </resources>
 

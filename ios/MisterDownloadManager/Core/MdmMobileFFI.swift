@@ -89,4 +89,77 @@ public enum MdmMobileFFI {
         mdm_mobile_free_snapshot_list(&list)
         return result
     }
+
+    // --- Playlist FFI Bindings ---
+
+    public static func isPlaylistUrl(_ url: String) -> Bool {
+        let lower = url.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return lower.contains("list=") ||
+            lower.contains("/playlist") ||
+            lower.hasSuffix(".m3u8") ||
+            lower.hasSuffix(".m3u")
+    }
+
+    public static func discoverPlaylist(url: String) -> DiscoveredPlaylist? {
+        guard let cUrl = (url as NSString).utf8String else { return nil }
+        guard let jsonPtr = mdm_mobile_discover_playlist_json(cUrl) else { return nil }
+        let jsonStr = String(cString: jsonPtr)
+        mdm_mobile_free_string(jsonPtr)
+        guard let data = jsonStr.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(DiscoveredPlaylist.self, from: data)
+    }
+
+    public static func createPlaylist(url: String, destDir: String, title: String? = nil) -> Int64 {
+        return url.withCString { cUrl in
+            destDir.withCString { cDest in
+                if let t = title {
+                    return t.withCString { cTitle in
+                        return mdm_mobile_create_playlist(cUrl, cDest, cTitle)
+                    }
+                } else {
+                    return mdm_mobile_create_playlist(cUrl, cDest, nil)
+                }
+            }
+        }
+    }
+
+    public static func startPlaylist(id: UInt64) -> Bool {
+        return mdm_mobile_start_playlist(id) == 0
+    }
+
+    public static func pausePlaylist(id: UInt64) -> Bool {
+        return mdm_mobile_pause_playlist(id) == 0
+    }
+
+    public static func resumePlaylist(id: UInt64) -> Bool {
+        return mdm_mobile_resume_playlist(id) == 0
+    }
+
+    public static func cancelPlaylist(id: UInt64) -> Bool {
+        return mdm_mobile_cancel_playlist(id) == 0
+    }
+
+    public static func retryFailedPlaylist(id: UInt64) -> Bool {
+        return mdm_mobile_retry_failed_playlist(id) == 0
+    }
+
+    public static func removePlaylist(id: UInt64, deleteFiles: Bool = false) -> Bool {
+        return mdm_mobile_remove_playlist(id, deleteFiles ? 1 : 0) == 0
+    }
+
+    public static func getPlaylistSnapshot(id: UInt64) -> PlaylistTask? {
+        guard let jsonPtr = mdm_mobile_get_playlist_snapshot_json(id) else { return nil }
+        let jsonStr = String(cString: jsonPtr)
+        mdm_mobile_free_string(jsonPtr)
+        guard let data = jsonStr.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(PlaylistTask.self, from: data)
+    }
+
+    public static func getAllPlaylists() -> [PlaylistTask] {
+        guard let jsonPtr = mdm_mobile_get_all_playlists_json() else { return [] }
+        let jsonStr = String(cString: jsonPtr)
+        mdm_mobile_free_string(jsonPtr)
+        guard let data = jsonStr.data(using: .utf8) else { return [] }
+        return (try? JSONDecoder().decode([PlaylistTask].self, from: data)) ?? []
+    }
 }

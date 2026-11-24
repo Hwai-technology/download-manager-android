@@ -22,17 +22,23 @@ public struct MainTabView: View {
                 }
                 .tag(1)
 
+            PlaylistsScreen(viewModel: viewModel)
+                .tabItem {
+                    Label("Playlists", systemImage: "list.bullet.rectangle")
+                }
+                .tag(2)
+
             SpeedTestScreen()
                 .tabItem {
                     Label("Speed Test", systemImage: "network")
                 }
-                .tag(2)
+                .tag(3)
 
             SettingsScreen()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }
-                .tag(3)
+                .tag(4)
         }
         .accentColor(MDMTheme.electricBlue)
     }

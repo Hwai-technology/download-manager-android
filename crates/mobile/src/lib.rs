@@ -96,6 +96,9 @@ pub struct MobileEngine {
     downloads: Arc<RwLock<HashMap<u64, ActiveDownload>>>,
     queue_order: Arc<RwLock<Vec<u64>>>,
     max_active_downloads: Arc<RwLock<usize>>,
+    playlists: Arc<RwLock<HashMap<u64, playlist::MobilePlaylistSnapshot>>>,
+    playlist_order: Arc<RwLock<Vec<u64>>>,
+    max_active_playlist_items: Arc<RwLock<usize>>,
     persistence_dir: Arc<RwLock<Option<PathBuf>>>,
     runtime: Arc<tokio::runtime::Runtime>,
 }
@@ -113,6 +116,9 @@ impl MobileEngine {
             downloads: Arc::new(RwLock::new(HashMap::new())),
             queue_order: Arc::new(RwLock::new(Vec::new())),
             max_active_downloads: Arc::new(RwLock::new(3)),
+            playlists: Arc::new(RwLock::new(HashMap::new())),
+            playlist_order: Arc::new(RwLock::new(Vec::new())),
+            max_active_playlist_items: Arc::new(RwLock::new(2)),
             persistence_dir: Arc::new(RwLock::new(None)),
             runtime: Arc::new(runtime),
         });
@@ -311,6 +317,227 @@ impl MobileEngine {
         list
     }
 
+    // ==========================================
+    // Playlist Management Methods
+    // ==========================================
+
+    pub fn discover_playlist(&self, url_str: &str) -> Result<playlist::DiscoveredPlaylist, MobileError> {
+        playlist::discover_playlist_sync(url_str).map_err(MobileError::Engine)
+    }
+
+    pub fn create_playlist(
+        &self,
+        url_str: &str,
+        dest_parent_dir: &str,
+        custom_title: Option<&str>,
+        selected_indices: Option<Vec<u64>>,
+    ) -> Result<u64, MobileError> {
+        let discovered = self.discover_playlist(url_str)?;
+        let title = custom_title.unwrap_or(&discovered.title);
+        let safe_folder_name = mdm_engine::naming::sanitize(title);
+        let folder_name = if safe_folder_name.trim().is_empty() { "Playlist" } else { safe_folder_name.trim() };
+        let dest_folder = PathBuf::from(dest_parent_dir).join(folder_name);
+        let _ = std::fs::create_dir_all(&dest_folder);
+
+        let id = self.next_id.fetch_add(1, Ordering::SeqCst);
+        let total_count = discovered.items.len();
+
+        let mut items = Vec::new();
+        for item in discovered.items {
+            let should_include = match &selected_indices {
+                Some(indices) => indices.contains(&item.index),
+                None => !item.unavailable,
+            };
+
+            let status = if item.unavailable {
+                playlist::MobilePlaylistItemStatus::Unavailable
+            } else if should_include {
+                playlist::MobilePlaylistItemStatus::Pending
+            } else {
+                playlist::MobilePlaylistItemStatus::Skipped
+            };
+
+            let filename = playlist::format_numbered_filename(item.index, total_count, &item.title, "mp4");
+            let item_dest = dest_folder.join(filename);
+
+            items.push(playlist::MobilePlaylistItem {
+                index: item.index,
+                download_id: None,
+                url: item.url,
+                title: item.title,
+                duration_secs: item.duration_secs,
+                status,
+                dest_file: Some(item_dest.to_string_lossy().to_string()),
+                downloaded_bytes: 0,
+                total_bytes: None,
+                speed_bytes_per_sec: None,
+                error: None,
+            });
+        }
+
+        let mut snapshot = playlist::MobilePlaylistSnapshot {
+            id,
+            url: url_str.to_string(),
+            title: title.to_string(),
+            dest_folder: dest_folder.to_string_lossy().to_string(),
+            state: playlist::MobilePlaylistState::Created,
+            items,
+            total_items: 0,
+            completed_items: 0,
+            failed_items: 0,
+            active_items: 0,
+            skipped_items: 0,
+            total_downloaded_bytes: 0,
+            total_expected_bytes: None,
+            aggregate_speed_bytes_per_sec: 0,
+            progress_fraction: 0.0,
+            eta_seconds: None,
+        };
+        snapshot.compute_aggregates();
+
+        {
+            let mut p_map = self.playlists.write();
+            p_map.insert(id, snapshot);
+            let mut po = self.playlist_order.write();
+            po.push(id);
+        }
+
+        self.persist_to_disk();
+        self.reconcile_queue();
+        Ok(id)
+    }
+
+    pub fn start_playlist(&self, id: u64) -> Result<(), MobileError> {
+        let mut p_map = self.playlists.write();
+        let pl = p_map.get_mut(&id).ok_or(MobileError::NotFound(id))?;
+        pl.state = playlist::MobilePlaylistState::Downloading;
+        for item in pl.items.iter_mut() {
+            if item.status == playlist::MobilePlaylistItemStatus::Pending || item.status == playlist::MobilePlaylistItemStatus::Paused {
+                item.status = playlist::MobilePlaylistItemStatus::Queued;
+            }
+        }
+        pl.compute_aggregates();
+        drop(p_map);
+
+        self.persist_to_disk();
+        self.reconcile_queue();
+        Ok(())
+    }
+
+    pub fn pause_playlist(&self, id: u64) -> Result<(), MobileError> {
+        let mut p_map = self.playlists.write();
+        let pl = p_map.get_mut(&id).ok_or(MobileError::NotFound(id))?;
+        pl.state = playlist::MobilePlaylistState::Paused;
+
+        let dl_ids: Vec<u64> = pl.items.iter().filter_map(|it| it.download_id).collect();
+        for item in pl.items.iter_mut() {
+            if item.status == playlist::MobilePlaylistItemStatus::Downloading || item.status == playlist::MobilePlaylistItemStatus::Queued {
+                item.status = playlist::MobilePlaylistItemStatus::Paused;
+            }
+        }
+        pl.compute_aggregates();
+        drop(p_map);
+
+        for dl_id in dl_ids {
+            let _ = self.pause_download(dl_id);
+        }
+
+        self.persist_to_disk();
+        self.reconcile_queue();
+        Ok(())
+    }
+
+    pub fn resume_playlist(&self, id: u64) -> Result<(), MobileError> {
+        self.start_playlist(id)
+    }
+
+    pub fn cancel_playlist(&self, id: u64) -> Result<(), MobileError> {
+        let mut p_map = self.playlists.write();
+        let pl = p_map.get_mut(&id).ok_or(MobileError::NotFound(id))?;
+        pl.state = playlist::MobilePlaylistState::Cancelled;
+
+        let dl_ids: Vec<u64> = pl.items.iter().filter_map(|it| it.download_id).collect();
+        for item in pl.items.iter_mut() {
+            if item.status != playlist::MobilePlaylistItemStatus::Completed {
+                item.status = playlist::MobilePlaylistItemStatus::Cancelled;
+            }
+        }
+        pl.compute_aggregates();
+        drop(p_map);
+
+        for dl_id in dl_ids {
+            let _ = self.cancel_download(dl_id);
+        }
+
+        self.persist_to_disk();
+        self.reconcile_queue();
+        Ok(())
+    }
+
+    pub fn retry_failed_playlist_items(&self, id: u64) -> Result<(), MobileError> {
+        let mut p_map = self.playlists.write();
+        let pl = p_map.get_mut(&id).ok_or(MobileError::NotFound(id))?;
+        pl.state = playlist::MobilePlaylistState::Downloading;
+
+        for item in pl.items.iter_mut() {
+            if item.status == playlist::MobilePlaylistItemStatus::Failed || item.status == playlist::MobilePlaylistItemStatus::Cancelled {
+                item.status = playlist::MobilePlaylistItemStatus::Queued;
+                item.download_id = None;
+                item.error = None;
+            }
+        }
+        pl.compute_aggregates();
+        drop(p_map);
+
+        self.persist_to_disk();
+        self.reconcile_queue();
+        Ok(())
+    }
+
+    pub fn remove_playlist(&self, id: u64, delete_files: bool) -> Result<(), MobileError> {
+        let mut p_map = self.playlists.write();
+        let pl = p_map.remove(&id).ok_or(MobileError::NotFound(id))?;
+        drop(p_map);
+
+        let mut po = self.playlist_order.write();
+        po.retain(|&p_id| p_id != id);
+        drop(po);
+
+        for item in &pl.items {
+            if let Some(dl_id) = item.download_id {
+                let _ = self.remove_download(dl_id);
+            }
+        }
+
+        if delete_files {
+            let folder = PathBuf::from(&pl.dest_folder);
+            if folder.exists() {
+                let _ = std::fs::remove_dir_all(&folder);
+            }
+        }
+
+        self.persist_to_disk();
+        self.reconcile_queue();
+        Ok(())
+    }
+
+    pub fn get_playlist_snapshot(&self, id: u64) -> Result<playlist::MobilePlaylistSnapshot, MobileError> {
+        let p_map = self.playlists.read();
+        p_map.get(&id).cloned().ok_or(MobileError::NotFound(id))
+    }
+
+    pub fn get_all_playlists(&self) -> Vec<playlist::MobilePlaylistSnapshot> {
+        let po = self.playlist_order.read().clone();
+        let p_map = self.playlists.read();
+        let mut list = Vec::new();
+        for id in po {
+            if let Some(pl) = p_map.get(&id) {
+                list.push(pl.clone());
+            }
+        }
+        list
+    }
+
     pub fn restore_download(
         &self,
         id: u64,
@@ -410,6 +637,31 @@ impl MobileEngine {
             self.next_id.store(max_id + 1, Ordering::SeqCst);
         }
 
+        // Restore Playlists
+        let pl_file = dir.join("playlists_metadata.json");
+        if pl_file.exists() {
+            if let Ok(content) = std::fs::read_to_string(&pl_file) {
+                if let Ok(saved_playlists) = serde_json::from_str::<Vec<playlist::MobilePlaylistSnapshot>>(&content) {
+                    let mut p_map = self.playlists.write();
+                    let mut po = self.playlist_order.write();
+                    for mut pl in saved_playlists {
+                        if pl.id > max_id {
+                            max_id = pl.id;
+                        }
+                        pl.compute_aggregates();
+                        p_map.insert(pl.id, pl.clone());
+                        if !po.contains(&pl.id) {
+                            po.push(pl.id);
+                        }
+                    }
+                }
+            }
+        }
+
+        if max_id >= self.next_id.load(Ordering::SeqCst) {
+            self.next_id.store(max_id + 1, Ordering::SeqCst);
+        }
+
         self.reconcile_queue();
         count
     }
@@ -451,12 +703,28 @@ impl MobileEngine {
                 let _ = std::fs::rename(tmp_file, final_file);
             }
         }
+
+        // Persist playlists
+        let p_map = self.playlists.read();
+        let po = self.playlist_order.read();
+        let mut pl_list = Vec::new();
+        for &id in po.iter() {
+            if let Some(pl) = p_map.get(&id) {
+                pl_list.push(pl.clone());
+            }
+        }
+        if let Ok(json) = serde_json::to_string_pretty(&pl_list) {
+            let tmp_pl = dir.join("playlists_metadata.json.tmp");
+            let final_pl = dir.join("playlists_metadata.json");
+            if std::fs::write(&tmp_pl, json).is_ok() {
+                let _ = std::fs::rename(tmp_pl, final_pl);
+            }
+        }
     }
 
     pub fn reconcile_queue(&self) {
         let max_running = *self.max_active_downloads.read();
         let mut dl_map = self.downloads.write();
-        let q = self.queue_order.read();
 
         // 1. Clean up handles of downloads that finished or failed and retain terminal state
         let mut changed = false;
@@ -491,19 +759,125 @@ impl MobileEngine {
             }
         }
 
+        // 2. Synchronize and schedule playlists
+        {
+            let mut p_map = self.playlists.write();
+            let max_playlist_items = *self.max_active_playlist_items.read();
+
+            for (_p_id, pl) in p_map.iter_mut() {
+                // A. Update items from existing downloads
+                for item in pl.items.iter_mut() {
+                    if let Some(dl_id) = item.download_id {
+                        if let Some(entry) = dl_map.get(&dl_id) {
+                            if let Some(snap) = &entry.last_snapshot {
+                                item.downloaded_bytes = snap.downloaded;
+                                item.total_bytes = snap.size;
+                            } else {
+                                item.downloaded_bytes = entry.downloaded_checkpoint;
+                            }
+
+                            if let Some(handle) = &entry.handle {
+                                let s = handle.snapshot();
+                                item.downloaded_bytes = s.downloaded;
+                                item.total_bytes = s.size;
+                                let spd: u64 = s.connections.iter().map(|c| c.speed).sum();
+                                item.speed_bytes_per_sec = Some(spd);
+                                item.status = playlist::MobilePlaylistItemStatus::Downloading;
+                            } else if let Some(term) = entry.terminal_state {
+                                item.speed_bytes_per_sec = None;
+                                match term {
+                                    MobileDownloadState::Done => {
+                                        item.status = playlist::MobilePlaylistItemStatus::Completed;
+                                    }
+                                    MobileDownloadState::Failed => {
+                                        item.status = playlist::MobilePlaylistItemStatus::Failed;
+                                        item.error = entry.terminal_error.clone();
+                                    }
+                                    MobileDownloadState::Cancelled => {
+                                        item.status = playlist::MobilePlaylistItemStatus::Cancelled;
+                                    }
+                                    _ => {}
+                                }
+                            } else if entry.paused {
+                                item.speed_bytes_per_sec = None;
+                                item.status = playlist::MobilePlaylistItemStatus::Paused;
+                            }
+                        }
+                    }
+                }
+
+                // B. If playlist is Downloading, schedule items up to limit
+                if pl.state == playlist::MobilePlaylistState::Downloading {
+                    let active_count = pl.items.iter().filter(|it| it.status == playlist::MobilePlaylistItemStatus::Downloading).count();
+                    let mut can_schedule = max_playlist_items.saturating_sub(active_count);
+
+                    for item in pl.items.iter_mut() {
+                        if can_schedule == 0 {
+                            break;
+                        }
+                        if item.status == playlist::MobilePlaylistItemStatus::Queued {
+                            if let Some(dest_file) = &item.dest_file {
+                                if let Ok(parsed_url) = Url::parse(&item.url) {
+                                    let item_dl_id = self.next_id.fetch_add(1, Ordering::SeqCst);
+                                    let active = ActiveDownload {
+                                        url: parsed_url,
+                                        dest: PathBuf::from(dest_file),
+                                        handle: None,
+                                        paused: false,
+                                        terminal_state: None,
+                                        terminal_error: None,
+                                        last_snapshot: None,
+                                        downloaded_checkpoint: 0,
+                                    };
+                                    dl_map.insert(item_dl_id, active);
+                                    self.queue_order.write().push(item_dl_id);
+
+                                    item.download_id = Some(item_dl_id);
+                                    item.status = playlist::MobilePlaylistItemStatus::Downloading;
+                                    can_schedule -= 1;
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // C. Recompute aggregates and determine completion
+                pl.compute_aggregates();
+                if pl.state == playlist::MobilePlaylistState::Downloading {
+                    let all_terminal = pl.items.iter().all(|it| matches!(
+                        it.status,
+                        playlist::MobilePlaylistItemStatus::Completed |
+                        playlist::MobilePlaylistItemStatus::Failed |
+                        playlist::MobilePlaylistItemStatus::Skipped |
+                        playlist::MobilePlaylistItemStatus::Unavailable |
+                        playlist::MobilePlaylistItemStatus::Cancelled
+                    ));
+                    if all_terminal {
+                        if pl.failed_items > 0 {
+                            pl.state = playlist::MobilePlaylistState::CompletedWithErrors;
+                        } else {
+                            pl.state = playlist::MobilePlaylistState::Completed;
+                        }
+                        changed = true;
+                    }
+                }
+            }
+        }
+
         let currently_running = dl_map.values().filter(|e| e.handle.is_some()).count();
         let mut slots_available = max_running.saturating_sub(currently_running);
 
         if slots_available == 0 {
             if changed {
                 drop(dl_map);
-                drop(q);
                 self.persist_to_disk();
             }
             return;
         }
 
-        for &id in q.iter() {
+        let current_queue = self.queue_order.read().clone();
+        for &id in current_queue.iter() {
             if slots_available == 0 {
                 break;
             }
@@ -542,7 +916,6 @@ impl MobileEngine {
         }
 
         drop(dl_map);
-        drop(q);
 
         if changed {
             self.persist_to_disk();
@@ -550,4 +923,5 @@ impl MobileEngine {
     }
 }
 
+pub mod playlist;
 pub mod ffi;

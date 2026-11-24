@@ -52,10 +52,14 @@ class MainViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
+    val playlists: StateFlow<List<com.misterdownloadmanager.domain.model.PlaylistTask>> = useCases.getPlaylists()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         viewModelScope.launch {
             while (isActive) {
                 useCases.refresh()
+                useCases.refreshPlaylists()
                 delay(1000)
             }
         }
@@ -109,6 +113,61 @@ class MainViewModel(
                 }
             }
             useCases.removeDownload(id)
+        }
+    }
+
+    // --- Playlist Methods ---
+
+    fun isPlaylistUrl(url: String): Boolean = useCases.isPlaylistUrl(url)
+
+    suspend fun discoverPlaylist(url: String): com.misterdownloadmanager.domain.model.DiscoveredPlaylistDto? {
+        return useCases.discoverPlaylist(url).getOrNull()
+    }
+
+    fun addPlaylist(url: String, destDir: String, title: String? = null) {
+        viewModelScope.launch {
+            val result = useCases.createPlaylist(url, destDir, title)
+            result.onSuccess { id ->
+                useCases.startPlaylist(id)
+            }.onFailure {
+                _errorMessage.value = it.localizedMessage ?: "Failed to create playlist"
+            }
+        }
+    }
+
+    fun startPlaylist(id: Long) {
+        viewModelScope.launch {
+            useCases.startPlaylist(id)
+        }
+    }
+
+    fun pausePlaylist(id: Long) {
+        viewModelScope.launch {
+            useCases.pausePlaylist(id)
+        }
+    }
+
+    fun resumePlaylist(id: Long) {
+        viewModelScope.launch {
+            useCases.resumePlaylist(id)
+        }
+    }
+
+    fun cancelPlaylist(id: Long) {
+        viewModelScope.launch {
+            useCases.cancelPlaylist(id)
+        }
+    }
+
+    fun retryFailedPlaylist(id: Long) {
+        viewModelScope.launch {
+            useCases.retryFailedPlaylist(id)
+        }
+    }
+
+    fun removePlaylist(id: Long, deleteFiles: Boolean = false) {
+        viewModelScope.launch {
+            useCases.removePlaylist(id, deleteFiles)
         }
     }
 }

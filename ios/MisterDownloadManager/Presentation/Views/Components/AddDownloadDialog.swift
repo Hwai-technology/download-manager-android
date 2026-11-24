@@ -6,10 +6,11 @@ public struct AddDownloadDialog: View {
     @State private var fileName: String = "download.bin"
     @State private var isCustomName: Bool = false
     let onAdd: (String, String) -> Void
+    var onAddPlaylist: ((String, String, String?) -> Void)? = nil
 
-    private var isYoutubePlaylist: Bool {
-        let u = url.lowercased()
-        return (u.contains("youtube.com") || u.contains("youtu.be")) && (u.contains("playlist") || u.contains("list="))
+    private var isPlaylist: Bool {
+        let u = url.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return u.contains("list=") || u.contains("/playlist") || u.hasSuffix(".m3u8") || u.hasSuffix(".m3u")
     }
 
     public var body: some View {
@@ -26,19 +27,19 @@ public struct AddDownloadDialog: View {
                             }
                         }
 
-                    if isYoutubePlaylist {
+                    if isPlaylist {
                         HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(MDMTheme.stateFailed)
-                            Text("YouTube playlists cannot be downloaded as raw files. Direct video links or Desktop extraction are required.")
+                            Image(systemName: "list.bullet.rectangle.fill")
+                                .foregroundColor(MDMTheme.electricBlue)
+                            Text("Playlist detected! All items will be downloaded into a dedicated folder.")
                                 .font(.caption)
-                                .foregroundColor(MDMTheme.stateFailed)
+                                .foregroundColor(MDMTheme.electricBlue)
                         }
                     }
                 }
 
-                Section(header: Text("File Name")) {
-                    TextField("e.g. video.mp4", text: $fileName)
+                Section(header: Text(isPlaylist ? "Playlist Folder / Title" : "File Name")) {
+                    TextField(isPlaylist ? "e.g. My Playlist" : "e.g. video.mp4", text: $fileName)
                         .onChange(of: fileName) { _ in
                             isCustomName = true
                         }
@@ -48,7 +49,7 @@ public struct AddDownloadDialog: View {
                     EmptyView()
                 }
             }
-            .navigationTitle("New Download")
+            .navigationTitle(isPlaylist ? "New Playlist" : "New Download")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -58,12 +59,18 @@ public struct AddDownloadDialog: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Start Download") {
                         guard !url.isEmpty else { return }
-                        let cleanName = sanitizeFileName(fileName)
                         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
                         let mdmDir = docs.appendingPathComponent("Mister Download Manager", isDirectory: true)
                         try? FileManager.default.createDirectory(at: mdmDir, withIntermediateDirectories: true)
-                        let dest = mdmDir.appendingPathComponent(cleanName).path
-                        onAdd(url, dest)
+
+                        if isPlaylist, let addPl = onAddPlaylist {
+                            let playlistTitle = fileName.isEmpty ? nil : fileName
+                            addPl(url, mdmDir.path, playlistTitle)
+                        } else {
+                            let cleanName = sanitizeFileName(fileName)
+                            let dest = mdmDir.appendingPathComponent(cleanName).path
+                            onAdd(url, dest)
+                        }
                         presentationMode.wrappedValue.dismiss()
                     }
                     .disabled(url.isEmpty)
