@@ -71,6 +71,9 @@ Built as a unified monorepo, MDM pairs a shared, memory-safe **Rust download eng
 | **Queue Scheduling & Limits** | **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
 | **Speed Calculation & Telemetry**| **VERIFIED** | **VERIFIED** | **VERIFIED** | **VERIFIED** |
 | **Background Execution** | **Foreground Service** (`dataSync`) | **BGTaskScheduler** | System Tray / Background | Dedicated Tokio Runtime |
+| **Progress Notifications** | **VERIFIED** (Live Speed & %) | **VERIFIED** (Native Actions & Alerts) | Native OS Notifications | Engine Event Stream |
+| **Clipboard Link Detection** | **VERIFIED** (Live Auto-Detect & Actions) | **VERIFIED** (Native Paste & Alerts) | Supported via Tray / Grabber | N/A |
+| **Sharesheet / Extension** | **VERIFIED** (`ACTION_SEND` / `VIEW`) | **VERIFIED** (Share Extension) | N/A | N/A |
 | **User Interface** | Kotlin / Jetpack Compose | Swift / SwiftUI | Rust / `egui` | Headless Core / API |
 | **BitTorrent Client** | Planned | Planned | **VERIFIED** | `crates/torrent` |
 | **Browser Extension Integration**| Unsupported (Mobile) | Unsupported (Mobile) | **VERIFIED** | Native Host (`crates/nmhost`)|

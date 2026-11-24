@@ -35,8 +35,12 @@ public struct SettingsView: View {
                 }
 
                 // Notifications Section
-                Section(header: Text("Notifications")) {
+                Section(header: Text("Notifications & Clipboard")) {
                     Toggle("Show Transfer Alerts", isOn: $notificationsEnabled)
+                    Toggle("Clipboard Link Detection", isOn: Binding(
+                        get: { UserDefaults.standard.object(forKey: "pref_clipboard_detection") as? Bool ?? true },
+                        set: { UserDefaults.standard.set($0, forKey: "pref_clipboard_detection") }
+                    ))
                 }
 
                 // About & Legal Section

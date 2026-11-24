@@ -11,7 +11,7 @@ The visual identity is anchored by the **Globe Gentleman** mascot and orbit stre
 - **The Sweeping Orbit Arrow & Digital Packets:** High-speed download acceleration transitioning from crisp emerald green (`#22C55E` / `#10B981`) to bright cyan/teal (`#06B6D4` / `#00B4D8`).
 - **The Top Hat & Moustache:** Midnight Obsidian (`#0F172A` / `#1A1D24`) accented with a vivid emerald hat-band (`#3CD070`).
 
----
+--- 
 
 ## 2. Core Color Palette
 

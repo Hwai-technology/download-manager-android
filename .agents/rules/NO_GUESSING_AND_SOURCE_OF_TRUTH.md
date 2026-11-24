@@ -17,7 +17,7 @@ When sources disagree, prioritize direct evidence from the checked-out implement
 
 Never invent or assume the existence of:
 
-- Files or directories.
+- Files or directories. 
 - Crates or Cargo workspace members.
 - Rust modules or Kotlin packages.
 - Functions, methods, structs, enums, traits, or constants.

@@ -25,14 +25,32 @@ public struct SpeedometerGaugeView: View {
     }
 
     private var formattedTotal: String {
-        if totalDownloadedBytes >= 1024 * 1024 * 1024 {
-            return String(format: "%.1f GB", Double(totalDownloadedBytes) / (1024.0 * 1024.0 * 1024.0))
-        } else if totalDownloadedBytes >= 1024 * 1024 {
-            return String(format: "%.1f MB", Double(totalDownloadedBytes) / (1024.0 * 1024.0))
-        } else if totalDownloadedBytes >= 1024 {
-            return "\(totalDownloadedBytes / 1024) KB"
+        formatByteSize(totalDownloadedBytes)
+    }
+
+    public static func formatByteSize(_ bytes: Int64) -> String {
+        if bytes >= 1024 * 1024 * 1024 {
+            return String(format: "%.1f GB", Double(bytes) / (1024.0 * 1024.0 * 1024.0))
+        } else if bytes >= 1024 * 1024 {
+            return String(format: "%.1f MB", Double(bytes) / (1024.0 * 1024.0))
+        } else if bytes >= 1024 {
+            return "\(bytes / 1024) KB"
         } else {
-            return "\(totalDownloadedBytes) B"
+            return "\(bytes) B"
+        }
+    }
+
+    public static func formatSpeed(_ bytesPerSec: Int64) -> String {
+        if bytesPerSec >= 1024 * 1024 * 1024 {
+            return String(format: "%.2f GB/s", Double(bytesPerSec) / (1024.0 * 1024.0 * 1024.0))
+        } else if bytesPerSec >= 1024 * 1024 {
+            return String(format: "%.1f MB/s", Double(bytesPerSec) / (1024.0 * 1024.0))
+        } else if bytesPerSec >= 1024 {
+            return String(format: "%.0f KB/s", Double(bytesPerSec) / 1024.0)
+        } else if bytesPerSec > 0 {
+            return "\(bytesPerSec) B/s"
+        } else {
+            return "0 B/s"
         }
     }
 
@@ -106,6 +124,13 @@ struct StatCard: View {
 
     var body: some View {
         VStack(spacing: 4) {
+            Text(count)
+                .font(.subheadline.bold())
+                .foregroundColor(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .multilineTextAlignment(.center)
+
             HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.caption2)
@@ -114,11 +139,6 @@ struct StatCard: View {
                     .font(.caption2.bold())
                     .foregroundColor(.secondary)
             }
-            Text(count)
-                .font(.subheadline.bold())
-                .foregroundColor(color)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)

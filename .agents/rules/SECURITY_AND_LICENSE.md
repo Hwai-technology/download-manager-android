@@ -14,7 +14,7 @@
 ## 2. Secrets and Sensitive Information
 
 Never expose, log, commit, or transmit secrets unnecessarily.
-
+ 
 Sensitive information includes, but is not limited to:
 
 - Passwords.

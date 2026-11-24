@@ -10,7 +10,10 @@
     <string name="dashboard_queued_downloads">%1$d في الانتظار</string>
     <string name="dashboard_completed_downloads">%1$d مكتمل</string>
     <string name="dashboard_total_data">%1$s</string>
-    <string name="dashboard_total_data_label">إجمالي البيانات المحمّلة</string>
+    <string name="dashboard_total_data_label">الإجمالي</string>
+    <string name="dashboard_storage_quick_stats">نظرة عامة على التخزين</string>
+    <string name="dashboard_storage_free">%1$s متاح من أصل %2$s</string>
+    <string name="dashboard_storage_used_app">%1$s مستخدمة بواسطة MDM</string>
     <string name="dashboard_active_section">التنزيلات النشطة</string>
     <string name="dashboard_no_active">لا توجد تنزيلات نشطة حالياً</string>
     <string name="dashboard_view_all">عرض الكل</string>
@@ -45,6 +48,15 @@
     <string name="action_play">تشغيل</string>
     <string name="action_share">مشاركة</string>
     <string name="action_details">التفاصيل</string>
+
+    <!-- Clipboard Link Detection -->
+    <string name="clipboard_notif_title">تم اكتشاف رابط جديد</string>
+    <string name="clipboard_notif_message">هل ترغب في تنزيل هذا الرابط؟</string>
+    <string name="clipboard_dialog_download_action">تنزيل الآن</string>
+    <string name="clipboard_action_open">فتح التطبيق</string>
+    <string name="clipboard_action_later">لاحقاً</string>
+    <string name="clipboard_dialog_dismiss_action">تجاهل</string>
+    <string name="clipboard_banner_title">تم رصد رابط في الحافظة</string>
 
     <!-- Dialogs -->
     <string name="dialog_new_download">تنزيل جديد</string>
@@ -87,6 +99,8 @@
     <string name="settings_section_notifications">الإشعارات</string>
     <string name="settings_notif_enabled">إظهار إشعارات التنزيل</string>
     <string name="settings_notif_desc">تنبيه عند اكتمال أو تعثر التنزيلات</string>
+    <string name="settings_clipboard_detection_title">التعرف على الروابط المنسوخة</string>
+    <string name="settings_clipboard_detection_desc">اقتراح التنزيل تلقائياً عند نسخ رابط قابل للتحميل</string>
     <string name="settings_section_about">حول التطبيق</string>
     <string name="settings_app_version">الإصدار %1$s (المحرك: Rust v%2$s)</string>
     <string name="settings_license">الرخصة مفتوحة المصدر (GPLv3)</string>

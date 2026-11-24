@@ -1,0 +1,10 @@
+/* English Localizable.strings */
+
+"clipboard_notif_title" = "New link detected";
+"clipboard_notif_message" = "Would you like to download this link?";
+"clipboard_dialog_download_action" = "Download Now";
+"clipboard_action_open" = "Open App";
+"clipboard_action_later" = "Later";
+"clipboard_dialog_dismiss_action" = "Dismiss";
+
+

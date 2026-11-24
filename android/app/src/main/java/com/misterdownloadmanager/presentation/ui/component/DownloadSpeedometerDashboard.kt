@@ -264,7 +264,7 @@ fun DownloadSpeedometerDashboard(
             MetricTile(
                 title = stringResource(R.string.dashboard_total_data_label),
                 value = totalFormatted,
-                modifier = Modifier.weight(1.3f),
+                modifier = Modifier.weight(1f),
                 highlightColor = DarkAccentCyan
             )
         }
@@ -280,19 +280,23 @@ fun MetricTile(
 ) {
     Box(
         modifier = modifier
+            .fillMaxWidth()
             .background(highlightColor.copy(alpha = 0.08f), RoundedCornerShape(10.dp))
             .border(1.dp, highlightColor.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
-            .padding(horizontal = 8.dp, vertical = 10.dp)
+            .padding(horizontal = 4.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = highlightColor,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 maxLines = 1
             )
             Spacer(modifier = Modifier.height(2.dp))
@@ -300,6 +304,7 @@ fun MetricTile(
                 text = title,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 maxLines = 1
             )
         }

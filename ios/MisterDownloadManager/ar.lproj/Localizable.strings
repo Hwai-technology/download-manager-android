@@ -1,0 +1,10 @@
+/* Arabic Localizable.strings */
+
+"clipboard_notif_title" = "تم اكتشاف رابط جديد";
+"clipboard_notif_message" = "هل ترغب في تنزيل هذا الرابط؟";
+"clipboard_dialog_download_action" = "تنزيل الآن";
+"clipboard_action_open" = "فتح التطبيق";
+"clipboard_action_later" = "لاحقاً";
+"clipboard_dialog_dismiss_action" = "تجاهل";
+
+

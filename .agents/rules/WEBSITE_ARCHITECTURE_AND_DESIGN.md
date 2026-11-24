@@ -7,7 +7,7 @@ This specification defines the clean architecture, modular file organization, Ta
 ## 1. Modular Directory & File Architecture (الهيكلة النظيفة للملفات)
 
 The website is engineered as a high-performance, zero-build-step static web application designed to load instantly on any device and be easily deployed via GitHub Pages or static web servers:
-
+  
 ```
 website/
 ├── src/                          # Source styles, scripts, and structured data

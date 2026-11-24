@@ -23,10 +23,8 @@ public struct DownloadCard: View {
     }
 
     private var formattedSpeed: String {
-        if task.speedBytesPerSec >= 1024 * 1024 {
-            return String(format: "%.1f MB/s", Double(task.speedBytesPerSec) / (1024.0 * 1024.0))
-        } else if task.speedBytesPerSec > 0 {
-            return "\(task.speedBytesPerSec / 1024) KB/s"
+        if task.speedBytesPerSec > 0 {
+            return SpeedometerGaugeView.formatSpeed(task.speedBytesPerSec)
         }
         return ""
     }

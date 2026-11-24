@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.misterdownloadmanager.R
 import com.misterdownloadmanager.domain.model.DownloadTask
+import com.misterdownloadmanager.util.FileUtils
 import java.io.File
 
 @Composable
@@ -25,7 +26,7 @@ fun DownloadDetailsDialog(
     }
 
     val speedText = if (task.speedBytesPerSec != null && task.speedBytesPerSec > 0) {
-        "${task.speedBytesPerSec / 1024} KB/s"
+        FileUtils.formatSpeed(task.speedBytesPerSec)
     } else {
         "--"
     }

@@ -8,6 +8,9 @@ This document outlines key technical milestones and planned features for Mister 
 - [x] Shared Rust mobile bridge (`crates/mobile`) with Tokio async runtime.
 - [x] JNI bindings and Android foreground service implementation.
 - [x] C-ABI exports and Swift bindings for iOS.
+- [x] Real-time download progress notification with live speed and progress fraction on Android.
+- [x] Automatic clipboard detection and branded action notifications on Android and iOS.
+- [x] Native Sharesheet (`ACTION_SEND` / `ACTION_VIEW`) and iOS Share Extension support.
 - [ ] BitTorrent download engine integration on mobile.
 - [ ] Advanced Android Scoped Storage and MediaStore integration.
 - [ ] Background URLSession integration on iOS.

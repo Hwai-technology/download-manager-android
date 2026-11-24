@@ -63,13 +63,80 @@ object FileUtils {
         return if (withoutLeadingDots.isNotBlank()) withoutLeadingDots else "download.bin"
     }
 
+    private val URL_REGEX = Regex("https?://[^\\s\"'<>]+", RegexOption.IGNORE_CASE)
+
+    fun extractFirstUrl(text: String?): String? {
+        if (text.isNullOrBlank()) return null
+        val match = URL_REGEX.find(text)
+        return match?.value?.trimEnd('.', ',', ')', ']', ';')
+    }
+
+    /**
+     * Shortens and formats a URL for user-facing previews in notifications or banners:
+     * - Preserves scheme, domain/host, and first meaningful path segment.
+     * - Strips tracking queries and long token strings.
+     * - Uses an ellipsis if length exceeds maxPreviewLength.
+     */
+    fun formatShortUrlPreview(url: String, maxLength: Int = 45): String {
+        return try {
+            val uri = Uri.parse(url)
+            val host = uri.host ?: ""
+            val path = uri.path ?: ""
+            if (host.isEmpty()) {
+                return if (url.length > maxLength) url.take(maxLength - 3) + "..." else url
+            }
+            val cleanBase = if (path.isEmpty() || path == "/") host else "$host$path"
+            if (cleanBase.length <= maxLength) {
+                cleanBase
+            } else {
+                val headLen = maxLength - 12
+                cleanBase.take(headLen) + "..." + cleanBase.takeLast(9)
+            }
+        } catch (_: Exception) {
+            if (url.length > maxLength) url.take(maxLength - 3) + "..." else url
+        }
+    }
+
     fun extractFileNameFromUrl(url: String): String {
         return try {
             val cleanUrl = url.substringBefore('?').substringBefore('#')
             val rawName = cleanUrl.substringAfterLast('/')
             val decoded = URLDecoder.decode(rawName, StandardCharsets.UTF_8.name())
-            val candidate = if (decoded.isNotBlank() && decoded.contains('.')) {
-                decoded
+            if (decoded.isNotBlank() && decoded.contains('.')) {
+                return sanitizeFileName(decoded)
+            }
+
+            // Check query parameters for possible filename or title (e.g. ?filename=... or ?title=... or ?file=...)
+            val uri = Uri.parse(url)
+            val queryFileName = uri.getQueryParameter("filename")
+                ?: uri.getQueryParameter("file")
+                ?: uri.getQueryParameter("title")
+                ?: uri.getQueryParameter("name")
+
+            if (!queryFileName.isNullOrBlank()) {
+                val decodedQuery = URLDecoder.decode(queryFileName, StandardCharsets.UTF_8.name())
+                if (decodedQuery.isNotBlank()) {
+                    val finalName = if (decodedQuery.contains('.')) decodedQuery else "$decodedQuery.mp4"
+                    return sanitizeFileName(finalName)
+                }
+            }
+
+            // Check if it's YouTube video
+            val videoId = uri.getQueryParameter("v")
+            if (!videoId.isNullOrBlank()) {
+                return sanitizeFileName("YouTube_Video_$videoId.mp4")
+            }
+
+            val pathSegs = uri.pathSegments
+            if (!pathSegs.isNullOrEmpty() && (uri.host?.contains("youtu.be") == true)) {
+                val id = pathSegs.last()
+                if (id.isNotBlank()) {
+                    return sanitizeFileName("YouTube_Video_$id.mp4")
+                }
+            }
+
+            val candidate = if (decoded.isNotBlank()) {
+                "$decoded.mp4"
             } else {
                 "download.bin"
             }

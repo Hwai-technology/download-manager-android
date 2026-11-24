@@ -67,11 +67,7 @@ fun DownloadCard(
     }
 
     val speedText = if (task.speedBytesPerSec != null && task.speedBytesPerSec > 0) {
-        if (task.speedBytesPerSec >= 1024 * 1024) {
-            String.format("%.1f MB/s", task.speedBytesPerSec.toDouble() / (1024 * 1024))
-        } else {
-            "${task.speedBytesPerSec / 1024} KB/s"
-        }
+        FileUtils.formatSpeed(task.speedBytesPerSec)
     } else {
         "--"
     }

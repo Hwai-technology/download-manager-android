@@ -8,3 +8,4 @@ Read these rules before changing code. They apply to all work in this repository
 - [NO_GUESSING_AND_SOURCE_OF_TRUTH.md](NO_GUESSING_AND_SOURCE_OF_TRUTH.md) — Strict data handling and zero value guessing.
 - [SECURITY_AND_LICENSE.md](SECURITY_AND_LICENSE.md) — Licensing (GPL-3.0), clean room standards, and security policies.
 - [WEBSITE_ARCHITECTURE_AND_DESIGN.md](WEBSITE_ARCHITECTURE_AND_DESIGN.md) — Website presentation architecture, clean code standards, Tailwind tokens, and Dark/Light themes.
+ 

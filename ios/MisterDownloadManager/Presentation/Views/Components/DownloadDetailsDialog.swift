@@ -15,7 +15,7 @@ public struct DownloadDetailsDialog: View {
                         DetailRow(title: "Total Size", value: "\(total) bytes")
                     }
                     if task.speedBytesPerSec > 0 {
-                        DetailRow(title: "Speed", value: "\(task.speedBytesPerSec / 1024) KB/s")
+                        DetailRow(title: "Speed", value: SpeedometerGaugeView.formatSpeed(task.speedBytesPerSec))
                     }
                 }
 

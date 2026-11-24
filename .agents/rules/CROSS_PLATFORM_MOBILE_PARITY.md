@@ -10,7 +10,7 @@ Whenever any feature, architectural enhancement, security fix, UI component, URL
 Neither platform may be left behind as a second-class citizen.
 
 ---
-
+ 
 ## 2. Core Synchronization Domains
 
 ### A. URL Validation & Smart Detection

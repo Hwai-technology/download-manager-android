@@ -38,13 +38,16 @@ public struct DashboardView: View {
                         totalDownloadedBytes: totalDownloaded
                     )
 
+                    // Storage Overview Section
+                    StorageOverviewCard(totalDownloaded: totalDownloaded)
+
                     // Active Transfers Header
                     HStack {
                         Text("Active Transfers")
                             .font(.headline)
                             .foregroundColor(.primary)
                         Spacer()
-                        Button(action: { selectedTab = 1 }) {
+                        Button(action: { selectedTab = 2 }) {
                             Text("View All")
                                 .font(.subheadline.bold())
                                 .foregroundColor(MDMTheme.electricBlue)
@@ -102,6 +105,60 @@ public struct DashboardView: View {
                     viewModel.addDownload(url: url, destPath: dest)
                 }
             }
+        }
+    }
+}
+
+struct StorageOverviewCard: View {
+    let totalDownloaded: Int64
+
+    private var storageInfo: (free: Int64, total: Int64) {
+        if let attrs = try? FileManager.default.attributesOfFileSystem(forPath: NSHomeDirectory()),
+           let freeSize = attrs[.systemFreeSize] as? Int64,
+           let totalSize = attrs[.systemSize] as? Int64 {
+            return (freeSize, totalSize)
+        }
+        return (0, 0)
+    }
+
+    var body: some View {
+        let (freeBytes, totalBytes) = storageInfo
+        if totalBytes > 0 {
+            let usedBytes = max(totalBytes - freeBytes, 0)
+            let usedFraction = Double(usedBytes) / Double(totalBytes)
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "internaldrive")
+                        .foregroundColor(MDMTheme.electricBlue)
+                        .font(.subheadline)
+                    Text("Storage Overview")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                }
+
+                ProgressView(value: usedFraction)
+                    .accentColor(MDMTheme.electricBlue)
+
+                HStack {
+                    Text("\(SpeedometerGaugeView.formatByteSize(freeBytes)) Free of \(SpeedometerGaugeView.formatByteSize(totalBytes))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(SpeedometerGaugeView.formatByteSize(totalDownloaded)) used by MDM")
+                        .font(.caption.bold())
+                        .foregroundColor(MDMTheme.electricBlue)
+                }
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+            )
         }
     }
 }

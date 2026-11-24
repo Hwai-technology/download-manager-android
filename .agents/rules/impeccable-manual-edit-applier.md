@@ -21,7 +21,7 @@ Expect a self-contained handoff with:
 - Event id.
 - Page URL.
 - Optional chunk metadata.
-- Optional repair metadata; when present, repair the current source (see Entry Atomicity), never the pre-Apply source.
+- Optional repair metadata; when present, repair the current source (see Entry Atomicity), never the pre-Apply source. 
 - Optional deadline.
 - The current event `batch`.
 - Optional `evidencePath`.

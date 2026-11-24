@@ -10,7 +10,10 @@
     <string name="dashboard_queued_downloads">%1$d Queued</string>
     <string name="dashboard_completed_downloads">%1$d Completed</string>
     <string name="dashboard_total_data">%1$s</string>
-    <string name="dashboard_total_data_label">Total Downloaded</string>
+    <string name="dashboard_total_data_label">Total</string>
+    <string name="dashboard_storage_quick_stats">Storage Overview</string>
+    <string name="dashboard_storage_free">%1$s Free of %2$s</string>
+    <string name="dashboard_storage_used_app">%1$s used by MDM</string>
     <string name="dashboard_active_section">Active Downloads</string>
     <string name="dashboard_no_active">No active downloads right now</string>
     <string name="dashboard_view_all">View all</string>
@@ -45,6 +48,15 @@
     <string name="action_play">Play</string>
     <string name="action_share">Share</string>
     <string name="action_details">Details</string>
+
+    <!-- Clipboard Link Detection -->
+    <string name="clipboard_notif_title">New link detected</string>
+    <string name="clipboard_notif_message">Would you like to download this link?</string>
+    <string name="clipboard_dialog_download_action">Download Now</string>
+    <string name="clipboard_action_open">Open App</string>
+    <string name="clipboard_action_later">Later</string>
+    <string name="clipboard_dialog_dismiss_action">Dismiss</string>
+    <string name="clipboard_banner_title">Link detected in clipboard</string>
 
     <!-- Dialogs -->
     <string name="dialog_new_download">New Download</string>
@@ -87,6 +99,8 @@
     <string name="settings_section_notifications">Notifications</string>
     <string name="settings_notif_enabled">Show Download Notifications</string>
     <string name="settings_notif_desc">Alert when downloads complete or fail</string>
+    <string name="settings_clipboard_detection_title">Clipboard Link Detection</string>
+    <string name="settings_clipboard_detection_desc">Prompt to download when a downloadable link is copied</string>
     <string name="settings_section_about">About</string>
     <string name="settings_app_version">Version %1$s (Engine: Rust v%2$s)</string>
     <string name="settings_license">Open-source License (GPLv3)</string>
