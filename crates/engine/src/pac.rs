@@ -5,15 +5,7 @@
 //! host. The script comes from the network: it gets the language only (no files, no modules),
 //! limited memory and a limited time.
 
-use std::cell::Cell;
-use std::collections::HashMap;
-use std::net::{IpAddr, ToSocketAddrs};
-use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
-
-use rquickjs::prelude::{Coerced, Opt};
-use rquickjs::{CatchResultExt, Context, Function, Runtime, Value};
+use std::sync::Arc;
 use url::Url;
 
 /// Where a request goes, in the script's order of preference.
@@ -24,8 +16,27 @@ pub enum Route {
     Proxy(String),
 }
 
+#[cfg(not(target_os = "android"))]
+use std::cell::Cell;
+#[cfg(not(target_os = "android"))]
+use std::collections::HashMap;
+#[cfg(not(target_os = "android"))]
+use std::net::{IpAddr, ToSocketAddrs};
+#[cfg(not(target_os = "android"))]
+use std::rc::Rc;
+#[cfg(not(target_os = "android"))]
+use std::sync::Mutex;
+#[cfg(not(target_os = "android"))]
+use std::time::{Duration, Instant};
+
+#[cfg(not(target_os = "android"))]
+use rquickjs::prelude::{Coerced, Opt};
+#[cfg(not(target_os = "android"))]
+use rquickjs::{CatchResultExt, Context, Function, Runtime, Value};
+
 /// The routes for `url` under `script`: its answer's entries that MDM can use, in order (the
 /// first is taken). Err if the script doesn't run.
+#[cfg(not(target_os = "android"))]
 pub fn routes(script: &Arc<str>, url: &Url) -> Result<Vec<Route>, String> {
     use std::hash::{Hash, Hasher};
     let host = url.host_str().unwrap_or("").to_ascii_lowercase();
@@ -46,7 +57,15 @@ pub fn routes(script: &Arc<str>, url: &Url) -> Result<Vec<Route>, String> {
     Ok(r)
 }
 
+#[cfg(target_os = "android")]
+pub fn routes(_script: &Arc<str>, _url: &Url) -> Result<Vec<Route>, String> {
+    // PAC scripts evaluation is skipped on Android platforms (direct route used)
+    Ok(vec![Route::Direct])
+}
+
+#[cfg(not(target_os = "android"))]
 type Answers = HashMap<(u64, String), Vec<Route>>;
+#[cfg(not(target_os = "android"))]
 static CACHE: Mutex<Option<Answers>> = Mutex::new(None);
 
 /// `FindProxyForURL`'s answer: `PROXY a:8080; SOCKS b:1080; DIRECT` → routes, unknown kinds
@@ -78,12 +97,17 @@ pub fn parse(answer: &str) -> Vec<Route> {
 /// stops there, short of the thread's own) and running time (the system's DNS answers not
 /// counted, up to `DNS_LIMIT` of them: a script that keeps looking up slow names still ends).
 /// Past one it stops with an error.
+#[cfg(not(target_os = "android"))]
 const MEMORY_LIMIT: usize = 32 << 20;
+#[cfg(not(target_os = "android"))]
 const STACK_LIMIT: usize = 512 << 10;
+#[cfg(not(target_os = "android"))]
 const TIME_LIMIT: Duration = Duration::from_secs(2);
+#[cfg(not(target_os = "android"))]
 const DNS_LIMIT: Duration = Duration::from_secs(30);
 
 /// Run the script and call `FindProxyForURL(url, host)`.
+#[cfg(not(target_os = "android"))]
 fn run(script: &str, url: &str, host: &str) -> Result<String, String> {
     let rt = Runtime::new().map_err(|e| e.to_string())?;
     rt.set_memory_limit(MEMORY_LIMIT);
@@ -124,6 +148,7 @@ fn run(script: &str, url: &str, host: &str) -> Result<String, String> {
 }
 
 /// `__mdmResolve(host)`: the host's first IPv4 address, or "".
+#[cfg(not(target_os = "android"))]
 fn resolve(host: &str) -> String {
     (host, 0)
         .to_socket_addrs()
@@ -135,6 +160,7 @@ fn resolve(host: &str) -> String {
 
 /// `__mdmMyIp()`: this computer's address on its network (the one a connection out would use;
 /// nothing is sent), else 127.0.0.1.
+#[cfg(not(target_os = "android"))]
 fn my_ip() -> String {
     crate::net::source_address(IpAddr::from([192, 0, 2, 1]))
         .unwrap_or(IpAddr::from([127, 0, 0, 1]))
@@ -142,6 +168,7 @@ fn my_ip() -> String {
 }
 
 /// The functions PAC scripts may call (as browsers provide them).
+#[cfg(not(target_os = "android"))]
 const HELPERS: &str = r#"
 function isPlainHostName(host) { return String(host).indexOf('.') < 0; }
 function dnsDomainIs(host, domain) {
