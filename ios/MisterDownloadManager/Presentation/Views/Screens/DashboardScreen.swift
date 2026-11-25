@@ -121,6 +121,11 @@ struct StorageOverviewCard: View {
         return (0, 0)
     }
 
+    private func formatStorageGb(_ bytes: Int64) -> String {
+        let gb = Double(bytes) / 1_000_000_000.0
+        return String(format: "%.2f GB", gb)
+    }
+
     var body: some View {
         let (freeBytes, totalBytes) = storageInfo
         if totalBytes > 0 {
@@ -132,20 +137,24 @@ struct StorageOverviewCard: View {
                     Image(systemName: "internaldrive")
                         .foregroundColor(MDMTheme.electricBlue)
                         .font(.subheadline)
-                    Text("Storage Overview")
+                    Text("Phone Storage Capacity")
                         .font(.headline)
                         .foregroundColor(.primary)
+                    Spacer()
+                    Text(formatStorageGb(totalBytes))
+                        .font(.caption.bold())
+                        .foregroundColor(MDMTheme.electricBlue)
                 }
 
                 ProgressView(value: usedFraction)
                     .accentColor(MDMTheme.electricBlue)
 
                 HStack {
-                    Text("\(SpeedometerGaugeView.formatByteSize(freeBytes)) Free of \(SpeedometerGaugeView.formatByteSize(totalBytes))")
+                    Text("Used: \(formatStorageGb(usedBytes))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(SpeedometerGaugeView.formatByteSize(totalDownloaded)) used by MDM")
+                    Text("Available: \(formatStorageGb(freeBytes))")
                         .font(.caption.bold())
                         .foregroundColor(MDMTheme.electricBlue)
                 }

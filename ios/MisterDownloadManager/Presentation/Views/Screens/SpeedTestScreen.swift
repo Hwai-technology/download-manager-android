@@ -118,6 +118,48 @@ public struct SpeedTestScreen: View {
                         .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
                 )
 
+                // New Speed Result Rectangle: MBps (Megabytes per second)
+                // Positioned directly below the gauge and directly above the four information boxes
+                HStack(alignment: .center) {
+                    // Left side: Large, prominent numerical download speed in MBps
+                    VStack(alignment: .leading, spacing: 2) {
+                        let currentMb: Double = {
+                            if speedTestManager.phase == .download {
+                                return speedTestManager.currentSpeedMBps
+                            } else if speedTestManager.phase == .upload || speedTestManager.phase == .complete {
+                                return speedTestManager.downloadSpeedMBps
+                            }
+                            return 0.0
+                        }()
+
+                        Text(currentMb > 0 ? String(format: "%.2f MBps", currentMb) : "-- MBps")
+                            .font(.system(size: 24, weight: .heavy, design: .rounded))
+                            .foregroundColor(MDMTheme.stateDownloading)
+                    }
+
+                    Spacer()
+
+                    // Right side: Short explanation of the measured download speed
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Actual Download Speed")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.primary)
+                        Text("Real data transfer rate")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color(UIColor.secondarySystemGroupedBackground))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(MDMTheme.stateDownloading.opacity(0.35), lineWidth: 1)
+                )
+
                 // 4 Metric Tiles (Ping, Jitter, Download, Upload)
                 VStack(spacing: 8) {
                     HStack(spacing: 8) {

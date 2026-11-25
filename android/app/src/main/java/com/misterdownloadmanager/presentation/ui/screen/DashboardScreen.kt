@@ -89,9 +89,9 @@ fun DashboardScreen(
             if (totalBytes > 0) {
                 val usedBytes = (totalBytes - freeBytes).coerceAtLeast(0L)
                 val usedFraction = (usedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-                val freeStr = FileUtils.formatFileSize(freeBytes)
-                val totalStr = FileUtils.formatFileSize(totalBytes)
-                val appStr = FileUtils.formatFileSize(appBytes)
+                val totalStr = FileUtils.formatStorageGb(totalBytes)
+                val usedStr = FileUtils.formatStorageGb(usedBytes)
+                val availableStr = FileUtils.formatStorageGb(freeBytes)
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -119,6 +119,13 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(
+                                text = totalStr,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
@@ -142,12 +149,12 @@ fun DashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = stringResource(R.string.dashboard_storage_free, freeStr, totalStr),
+                                text = "Used: $usedStr",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = stringResource(R.string.dashboard_storage_used_app, appStr),
+                                text = "Available: $availableStr",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.primary

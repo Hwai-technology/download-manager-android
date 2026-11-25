@@ -119,6 +119,17 @@ void mdm_mobile_free_snapshot(CMobileSnapshot *snap);
  */
 void mdm_mobile_free_snapshot_list(CMobileSnapshotList *list);
 
+/**
+ * Extract live metadata and formats for a given media URL.
+ * Returns a JSON string or NULL on error. Free with mdm_mobile_free_string().
+ */
+char *mdm_mobile_extract_video_metadata_json(const char *url);
+
+/**
+ * Free a C string allocated by the Rust mobile runtime.
+ */
+void mdm_mobile_free_string(char *s);
+
 #ifdef __cplusplus
 }
 #endif

@@ -22,11 +22,13 @@ public struct DownloadCard: View {
         return ["mp4", "mkv", "webm", "mov", "avi", "3gp"].contains { lower.hasSuffix($0) }
     }
 
-    private var formattedSpeed: String {
-        if task.speedBytesPerSec > 0 {
-            return SpeedometerGaugeView.formatSpeed(task.speedBytesPerSec)
+    private var formattedSizeText: String {
+        let downMb = Double(task.downloadedBytes) / 1_000_000.0
+        if task.totalBytes > 0 {
+            let totMb = Double(task.totalBytes) / 1_000_000.0
+            return String(format: "%.2f MB / %.2f MB", downMb, totMb)
         }
-        return ""
+        return String(format: "%.2f MB", downMb)
     }
 
     private var stateColor: Color {
@@ -81,7 +83,7 @@ public struct DownloadCard: View {
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(stateColor)
 
-                        Text("• \(task.downloadedBytes) B")
+                        Text("• \(formattedSizeText)")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
 
@@ -103,9 +105,59 @@ public struct DownloadCard: View {
                 .buttonStyle(BorderlessButtonStyle())
             }
 
-            // Progress Bar
-            ProgressView(value: task.progress)
-                .accentColor(stateColor)
+            // Dedicated Live MB Progress Card
+            if task.state == .downloading || task.state == .paused || task.state == .probing {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Download Progress")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(stateColor)
+                        Spacer()
+                        let percent = task.totalBytes > 0 ? "\(Int(task.progress * 100))%" : "--%"
+                        Text("Progress: \(percent)")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.primary)
+                    }
+
+                    let downMb = Double(task.downloadedBytes) / 1_000_000.0
+                    let totalMb = task.totalBytes > 0 ? String(format: "%.2f MB", Double(task.totalBytes) / 1_000_000.0) : "-- MB"
+                    Text("\(String(format: "%.2f MB", downMb)) / \(totalMb)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    HStack {
+                        let remainingMb = task.totalBytes > Int64(task.downloadedBytes) ?
+                            String(format: "Remaining: %.2f MB", Double(task.totalBytes - Int64(task.downloadedBytes)) / 1_000_000.0) :
+                            (task.totalBytes > 0 ? "Remaining: 0.00 MB" : "Remaining: -- MB")
+                        Text(remainingMb)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+
+                        Spacer()
+
+                        if !formattedSpeed.isEmpty && task.state == .downloading {
+                            Text(formattedSpeed)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(MDMTheme.electricBlue)
+                        }
+                    }
+
+                    ProgressView(value: task.progress)
+                        .accentColor(stateColor)
+                }
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(stateColor.opacity(0.2), lineWidth: 1)
+                )
+            } else {
+                ProgressView(value: task.progress)
+                    .accentColor(stateColor)
+            }
 
             // Action Buttons Row
             HStack {

@@ -272,7 +272,62 @@ fun SpeedTestScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // New Speed Result Rectangle: MBps (Megabytes per second)
+        // Positioned directly below the gauge and directly above the four information boxes
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, StateDownloading.copy(alpha = 0.4f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left Side: Large, prominent numerical download speed in MBps
+                Column {
+                    val currentMb = when (testState.phase) {
+                        SpeedTestPhase.DOWNLOAD -> testState.currentSpeedMBps
+                        SpeedTestPhase.UPLOAD, SpeedTestPhase.COMPLETE -> testState.downloadSpeedMBps
+                        else -> 0.0
+                    }
+                    val speedDisplay = if (currentMb > 0) String.format(java.util.Locale.US, "%.2f MBps", currentMb) else "-- MBps"
+
+                    Text(
+                        text = speedDisplay,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = StateDownloading,
+                        letterSpacing = (-0.3).sp
+                    )
+                }
+
+                // Right Side: Short explanation of the measured download speed
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Actual Download Speed",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Real data transfer rate",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         // 4 Key Metrics Grid
         Row(

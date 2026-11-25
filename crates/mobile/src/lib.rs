@@ -921,7 +921,12 @@ impl MobileEngine {
             self.persist_to_disk();
         }
     }
+
+    pub fn extract_video_metadata(&self, url_str: &str) -> Result<metadata::MobileVideoMetadata, MobileError> {
+        metadata::extract_metadata_sync(url_str).map_err(MobileError::Engine)
+    }
 }
 
+pub mod metadata;
 pub mod playlist;
 pub mod ffi;

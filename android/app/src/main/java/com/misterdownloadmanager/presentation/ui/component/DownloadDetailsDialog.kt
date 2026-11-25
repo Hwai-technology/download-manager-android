@@ -32,8 +32,8 @@ fun DownloadDetailsDialog(
     }
 
     val sizeText = if (task.totalBytes != null && task.totalBytes > 0) {
-        val downloadedMb = String.format("%.2f MB", task.downloadedBytes.toDouble() / (1024 * 1024))
-        val totalMb = String.format("%.2f MB", task.totalBytes.toDouble() / (1024 * 1024))
+        val downloadedMb = String.format(java.util.Locale.US, "%.2f MB", task.downloadedBytes.toDouble() / 1_000_000.0)
+        val totalMb = String.format(java.util.Locale.US, "%.2f MB", task.totalBytes.toDouble() / 1_000_000.0)
         "$downloadedMb / $totalMb (${(task.progressFraction * 100).toInt()}%)"
     } else {
         formatByteSize(task.downloadedBytes)

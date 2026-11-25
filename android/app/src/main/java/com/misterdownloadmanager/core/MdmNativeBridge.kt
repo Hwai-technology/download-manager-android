@@ -103,6 +103,17 @@ object MdmNativeBridge {
         }
     }
 
+    fun extractVideoMetadata(url: String): com.misterdownloadmanager.domain.model.VideoMetadata? {
+        if (!isLoaded) return null
+        val json = nativeExtractVideoMetadataJson(url) ?: return null
+        return try {
+            gson.fromJson(json, com.misterdownloadmanager.domain.model.VideoMetadata::class.java)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing video metadata: ${e.message}")
+            null
+        }
+    }
+
     // --- Playlist Bridge APIs ---
 
     fun isPlaylistUrl(url: String): Boolean {
@@ -333,6 +344,7 @@ object MdmNativeBridge {
     private external fun nativeGetSnapshotJson(id: Long): String?
     private external fun nativeGetAllSnapshotsJson(): String?
 
+    private external fun nativeExtractVideoMetadataJson(url: String): String?
     private external fun nativeDiscoverPlaylistJson(url: String): String?
     private external fun nativeCreatePlaylist(url: String, destDir: String, title: String): Long
     private external fun nativeStartPlaylist(id: Long): Int

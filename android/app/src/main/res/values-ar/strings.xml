@@ -11,8 +11,9 @@
     <string name="dashboard_completed_downloads">%1$d مكتمل</string>
     <string name="dashboard_total_data">%1$s</string>
     <string name="dashboard_total_data_label">الإجمالي</string>
-    <string name="dashboard_storage_quick_stats">نظرة عامة على التخزين</string>
-    <string name="dashboard_storage_free">%1$s متاح من أصل %2$s</string>
+    <string name="dashboard_storage_quick_stats">سعة تخزين الهاتف</string>
+    <string name="dashboard_storage_free">%1$s متوفر من إجمالي %2$s</string>
+    <string name="dashboard_storage_used">%1$s مستخدم</string>
     <string name="dashboard_storage_used_app">%1$s مستخدمة بواسطة MDM</string>
     <string name="dashboard_active_section">التنزيلات النشطة</string>
     <string name="dashboard_no_active">لا توجد تنزيلات نشطة حالياً</string>

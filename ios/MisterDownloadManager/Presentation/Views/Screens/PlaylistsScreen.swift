@@ -101,8 +101,9 @@ public struct PlaylistCardView: View {
                 // Info & Action Row
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        let downloadedStr = ByteCountFormatter.string(fromByteCount: Int64(playlist.downloadedBytes), countStyle: .file)
-                        let totalStr = playlist.totalBytes > 0 ? ByteCountFormatter.string(fromByteCount: Int64(playlist.totalBytes), countStyle: .file) : "--"
+                        let downloadedMb = Double(playlist.downloadedBytes) / 1_000_000.0
+                        let downloadedStr = String(format: "%.2f MB", downloadedMb)
+                        let totalStr = playlist.totalBytes > 0 ? String(format: "%.2f MB", Double(playlist.totalBytes) / 1_000_000.0) : "--"
                         Text("\(downloadedStr) / \(totalStr)")
                             .font(.caption2)
                             .foregroundColor(.secondary)

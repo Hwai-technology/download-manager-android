@@ -27,8 +27,10 @@ data class SpeedTestResult(
     val pingMs: Double = 0.0,
     val jitterMs: Double = 0.0,
     val downloadSpeedMbps: Double = 0.0,
+    val downloadSpeedMBps: Double = 0.0,
     val uploadSpeedMbps: Double = 0.0,
     val currentSpeedMbps: Double = 0.0,
+    val currentSpeedMBps: Double = 0.0,
     val currentProgress: Float = 0f,
     val errorMessage: String? = null
 )
@@ -65,13 +67,15 @@ class SpeedTestManager {
                 )
 
                 // 2. Measure Download Throughput
-                val downloadSpeed = measureDownloadSpeed()
+                val (downloadSpeedMbps, downloadSpeedMBps) = measureDownloadSpeed()
                 if (!isActive) return@launch
 
                 _testState.value = _testState.value.copy(
                     phase = SpeedTestPhase.UPLOAD,
-                    downloadSpeedMbps = downloadSpeed,
+                    downloadSpeedMbps = downloadSpeedMbps,
+                    downloadSpeedMBps = downloadSpeedMBps,
                     currentSpeedMbps = 0.0,
+                    currentSpeedMBps = 0.0,
                     currentProgress = 0.70f
                 )
 
@@ -83,7 +87,8 @@ class SpeedTestManager {
                 _testState.value = _testState.value.copy(
                     phase = SpeedTestPhase.COMPLETE,
                     uploadSpeedMbps = uploadSpeed,
-                    currentSpeedMbps = downloadSpeed,
+                    currentSpeedMbps = downloadSpeedMbps,
+                    currentSpeedMBps = downloadSpeedMBps,
                     currentProgress = 1.0f
                 )
             } catch (e: CancellationException) {
@@ -159,13 +164,14 @@ class SpeedTestManager {
         Pair(avgPing, avgJitter)
     }
 
-    private suspend fun measureDownloadSpeed(): Double = withContext(Dispatchers.IO) {
+    private suspend fun measureDownloadSpeed(): Pair<Double, Double> = withContext(Dispatchers.IO) {
         val totalBytesDownloaded = AtomicLong(0)
         val startTime = System.currentTimeMillis()
         val durationMs = 8000L // 8 seconds test
         val streamCount = 4
 
         var smoothedSpeedMbps = 0.0
+        var smoothedSpeedMBps = 0.0
         var lastBytes = 0L
         var lastTime = startTime
 
@@ -200,7 +206,7 @@ class SpeedTestManager {
             }
         }
 
-        // Sampler loop to report live real-time Mbps and progress
+        // Sampler loop to report live real-time Mbps/MBps and progress
         while (isActive && (System.currentTimeMillis() - startTime) < durationMs) {
             delay(120)
             val now = System.currentTimeMillis()
@@ -211,10 +217,18 @@ class SpeedTestManager {
 
             if (deltaSec > 0.05) {
                 val instantMbps = (deltaBytes * 8.0) / (deltaSec * 1_000_000.0)
+                val instantMBps = deltaBytes.toDouble() / (deltaSec * 1_000_000.0)
+
                 smoothedSpeedMbps = if (smoothedSpeedMbps == 0.0) {
                     instantMbps
                 } else {
                     (smoothedSpeedMbps * 0.70) + (instantMbps * 0.30)
+                }
+
+                smoothedSpeedMBps = if (smoothedSpeedMBps == 0.0) {
+                    instantMBps
+                } else {
+                    (smoothedSpeedMBps * 0.70) + (instantMBps * 0.30)
                 }
 
                 lastBytes = currentTotalBytes
@@ -223,7 +237,9 @@ class SpeedTestManager {
                 val progressFraction = min(1.0f, (now - startTime).toFloat() / durationMs)
                 _testState.value = _testState.value.copy(
                     currentSpeedMbps = smoothedSpeedMbps,
+                    currentSpeedMBps = smoothedSpeedMBps,
                     downloadSpeedMbps = (currentTotalBytes * 8.0) / (elapsedTotalSec * 1_000_000.0),
+                    downloadSpeedMBps = currentTotalBytes.toDouble() / (elapsedTotalSec * 1_000_000.0),
                     currentProgress = 0.20f + (0.50f * progressFraction)
                 )
             }
@@ -231,12 +247,17 @@ class SpeedTestManager {
 
         streamJobs.forEach { it.cancel() }
         val totalSec = (System.currentTimeMillis() - startTime) / 1000.0
-        val finalDownloadSpeed = if (totalSec > 0) {
+        val finalDownloadSpeedMbps = if (totalSec > 0) {
             (totalBytesDownloaded.get() * 8.0) / (totalSec * 1_000_000.0)
         } else {
             0.0
         }
-        finalDownloadSpeed
+        val finalDownloadSpeedMBps = if (totalSec > 0) {
+            totalBytesDownloaded.get().toDouble() / (totalSec * 1_000_000.0)
+        } else {
+            0.0
+        }
+        Pair(finalDownloadSpeedMbps, finalDownloadSpeedMBps)
     }
 
     private suspend fun measureUploadSpeed(): Double = withContext(Dispatchers.IO) {

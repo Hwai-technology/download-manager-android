@@ -312,10 +312,6 @@ fun MetricTile(
 }
 
 fun formatByteSize(bytes: Long): String {
-    return when {
-        bytes >= 1024L * 1024L * 1024L -> String.format("%.1f GB", bytes.toDouble() / (1024.0 * 1024.0 * 1024.0))
-        bytes >= 1024L * 1024L -> String.format("%.1f MB", bytes.toDouble() / (1024.0 * 1024.0))
-        bytes >= 1024L -> String.format("%.0f KB", bytes.toDouble() / 1024.0)
-        else -> "$bytes B"
-    }
+    val mb = bytes.toDouble() / 1_000_000.0
+    return String.format(java.util.Locale.US, "%.2f MB", mb)
 }

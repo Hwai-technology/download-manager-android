@@ -90,6 +90,15 @@ public enum MdmMobileFFI {
         return result
     }
 
+    public static func extractVideoMetadata(url: String) -> VideoMetadata? {
+        guard let cUrl = (url as NSString).utf8String else { return nil }
+        guard let jsonPtr = mdm_mobile_extract_video_metadata_json(cUrl) else { return nil }
+        let jsonStr = String(cString: jsonPtr)
+        mdm_mobile_free_string(jsonPtr)
+        guard let data = jsonStr.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(VideoMetadata.self, from: data)
+    }
+
     // --- Playlist FFI Bindings ---
 
     public static func isPlaylistUrl(_ url: String) -> Bool {

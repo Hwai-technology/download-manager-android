@@ -15,8 +15,10 @@ public class SpeedTestManager: ObservableObject {
     @Published public var pingMs: Double = 0.0
     @Published public var jitterMs: Double = 0.0
     @Published public var downloadSpeedMbps: Double = 0.0
+    @Published public var downloadSpeedMBps: Double = 0.0
     @Published public var uploadSpeedMbps: Double = 0.0
     @Published public var currentSpeedMbps: Double = 0.0
+    @Published public var currentSpeedMBps: Double = 0.0
     @Published public var currentProgress: Double = 0.0
     @Published public var errorMessage: String? = nil
 
@@ -34,8 +36,10 @@ public class SpeedTestManager: ObservableObject {
         self.pingMs = 0.0
         self.jitterMs = 0.0
         self.downloadSpeedMbps = 0.0
+        self.downloadSpeedMBps = 0.0
         self.uploadSpeedMbps = 0.0
         self.currentSpeedMbps = 0.0
+        self.currentSpeedMBps = 0.0
         self.errorMessage = nil
 
         activeTask = Task { [weak self] in
@@ -53,12 +57,14 @@ public class SpeedTestManager: ObservableObject {
             }
 
             // 2. Download Speed
-            let download = await self.measureDownloadSpeed()
+            let (downloadMbps, downloadMBps) = await self.measureDownloadSpeed()
             if Task.isCancelled { return }
 
             await MainActor.run {
-                self.downloadSpeedMbps = download
+                self.downloadSpeedMbps = downloadMbps
+                self.downloadSpeedMBps = downloadMBps
                 self.currentSpeedMbps = 0.0
+                self.currentSpeedMBps = 0.0
                 self.phase = .upload
                 self.currentProgress = 0.70
             }
@@ -69,7 +75,8 @@ public class SpeedTestManager: ObservableObject {
 
             await MainActor.run {
                 self.uploadSpeedMbps = upload
-                self.currentSpeedMbps = download
+                self.currentSpeedMbps = downloadMbps
+                self.currentSpeedMBps = downloadMBps
                 self.phase = .complete
                 self.currentProgress = 1.0
             }
@@ -128,7 +135,7 @@ public class SpeedTestManager: ObservableObject {
         return (avgPing, avgJitter)
     }
 
-    private func measureDownloadSpeed() async -> Double {
+    private func measureDownloadSpeed() async -> (Double, Double) {
         let startTime = Date()
         let durationSeconds: TimeInterval = 8.0
         var totalBytesDownloaded: Int64 = 0
@@ -165,6 +172,7 @@ public class SpeedTestManager: ObservableObject {
             var lastBytes: Int64 = 0
             var lastTime = Date()
             var smoothedMbps = 0.0
+            var smoothedMBps = 0.0
 
             while !Task.isCancelled && Date().timeIntervalSince(startTime) < durationSeconds {
                 try? await Task.sleep(nanoseconds: 120_000_000)
@@ -175,14 +183,18 @@ public class SpeedTestManager: ObservableObject {
 
                 if delta > 0.05 {
                     let instantMbps = (Double(currentBytes - lastBytes) * 8.0) / (delta * 1_000_000.0)
+                    let instantMBps = Double(currentBytes - lastBytes) / (delta * 1_000_000.0)
                     smoothedMbps = smoothedMbps == 0.0 ? instantMbps : (smoothedMbps * 0.70 + instantMbps * 0.30)
+                    smoothedMBps = smoothedMBps == 0.0 ? instantMBps : (smoothedMBps * 0.70 + instantMBps * 0.30)
                     lastBytes = currentBytes
                     lastTime = now
 
                     let progressFraction = min(1.0, elapsedTotal / durationSeconds)
                     await MainActor.run {
                         self.currentSpeedMbps = smoothedMbps
+                        self.currentSpeedMBps = smoothedMBps
                         self.downloadSpeedMbps = (Double(currentBytes) * 8.0) / (elapsedTotal * 1_000_000.0)
+                        self.downloadSpeedMBps = Double(currentBytes) / (elapsedTotal * 1_000_000.0)
                         self.currentProgress = 0.20 + (0.50 * progressFraction)
                     }
                 }
@@ -195,7 +207,8 @@ public class SpeedTestManager: ObservableObject {
 
         let totalDuration = Date().timeIntervalSince(startTime)
         let finalMbps = totalDuration > 0 ? (Double(totalBytesDownloaded) * 8.0) / (totalDuration * 1_000_000.0) : 0.0
-        return finalMbps
+        let finalMBps = totalDuration > 0 ? Double(totalBytesDownloaded) / (totalDuration * 1_000_000.0) : 0.0
+        return (finalMbps, finalMBps)
     }
 
     private func measureUploadSpeed() async -> Double {

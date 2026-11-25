@@ -20,7 +20,7 @@ url = { workspace = true }
 thiserror = { workspace = true }
 parking_lot = "0.12.5"
 libc = "0.2"
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
 jni = { version = "0.21", optional = true }
 jni-022 = { package = "jni", version = "0.22", optional = true }
 rustls-platform-verifier = { workspace = true, optional = true }

@@ -475,6 +475,27 @@ pub unsafe extern "C" fn mdm_mobile_get_playlist_snapshot_json(id: u64) -> *mut 
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn mdm_mobile_extract_video_metadata_json(url: *const c_char) -> *mut c_char {
+    let result = std::panic::catch_unwind(|| {
+        if url.is_null() {
+            return std::ptr::null_mut();
+        }
+        let url_str = match unsafe { CStr::from_ptr(url) }.to_str() {
+            Ok(s) => s,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        match crate::metadata::extract_metadata_sync(url_str) {
+            Ok(meta) => {
+                let json = serde_json::to_string(&meta).unwrap_or_default();
+                to_c_string(Some(&json))
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    });
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mdm_mobile_get_all_playlists_json() -> *mut c_char {
     let result = std::panic::catch_unwind(|| {
         let engine = get_or_init_engine();
@@ -898,6 +919,30 @@ pub mod jni_bridge {
             match engine.get_playlist_snapshot(id as u64) {
                 Ok(snap) => {
                     let json = serde_json::to_string(&snap).unwrap_or_default();
+                    env.new_string(json)
+                        .map(|s| s.into_raw())
+                        .unwrap_or(std::ptr::null_mut())
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }));
+        result.unwrap_or(std::ptr::null_mut())
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_misterdownloadmanager_core_MdmNativeBridge_nativeExtractVideoMetadataJson(
+        mut env: JNIEnv,
+        _class: JClass,
+        url: JString,
+    ) -> jstring {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let url_str: String = match env.get_string(&url) {
+                Ok(s) => s.into(),
+                Err(_) => return std::ptr::null_mut(),
+            };
+            match crate::metadata::extract_metadata_sync(&url_str) {
+                Ok(meta) => {
+                    let json = serde_json::to_string(&meta).unwrap_or_default();
                     env.new_string(json)
                         .map(|s| s.into_raw())
                         .unwrap_or(std::ptr::null_mut())

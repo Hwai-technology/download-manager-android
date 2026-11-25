@@ -16,6 +16,16 @@ object FileUtils {
         "mp4", "mkv", "webm", "avi", "mov", "3gp", "flv", "wmv", "m4v"
     )
 
+    fun resolvePathFromUri(uri: Uri): String? {
+        val path = uri.path ?: return null
+        return if (path.contains(":")) {
+            val split = path.substringAfterLast(":")
+            File(Environment.getExternalStorageDirectory(), split).absolutePath
+        } else {
+            path
+        }
+    }
+
     fun isVideoFile(filePath: String?): Boolean {
         if (filePath == null) return false
         val ext = filePath.substringAfterLast('.', "").lowercase()
@@ -212,23 +222,21 @@ object FileUtils {
     }
 
     fun formatFileSize(bytes: Long): String {
-        return when {
-            bytes >= 1024L * 1024L * 1024L -> String.format("%.2f GB", bytes.toDouble() / (1024.0 * 1024.0 * 1024.0))
-            bytes >= 1024L * 1024L -> String.format("%.1f MB", bytes.toDouble() / (1024.0 * 1024.0))
-            bytes >= 1024L -> String.format("%.0f KB", bytes.toDouble() / 1024.0)
-            bytes > 0 -> "$bytes B"
-            else -> "0 B"
-        }
+        val mb = bytes.toDouble() / 1_000_000.0
+        return String.format(java.util.Locale.US, "%.2f MB", mb)
+    }
+
+    /**
+     * Format storage capacity strictly in GB: bytes / 1,000,000,000.0
+     */
+    fun formatStorageGb(bytes: Long): String {
+        val gb = bytes.toDouble() / 1_000_000_000.0
+        return String.format(java.util.Locale.US, "%.2f GB", gb)
     }
 
     fun formatSpeed(bytesPerSec: Long): String {
-        return when {
-            bytesPerSec >= 1024L * 1024L * 1024L -> String.format("%.2f GB/s", bytesPerSec.toDouble() / (1024.0 * 1024.0 * 1024.0))
-            bytesPerSec >= 1024L * 1024L -> String.format("%.1f MB/s", bytesPerSec.toDouble() / (1024.0 * 1024.0))
-            bytesPerSec >= 1024L -> String.format("%.0f KB/s", bytesPerSec.toDouble() / 1024.0)
-            bytesPerSec > 0 -> "$bytesPerSec B/s"
-            else -> "0 B/s"
-        }
+        val mbPerSec = bytesPerSec.toDouble() / 1_000_000.0
+        return String.format(java.util.Locale.US, "%.2f MB/s", mbPerSec)
     }
 
     fun formatDuration(seconds: Long): String {

@@ -6,6 +6,13 @@ public struct AddDownloadDialog: View {
     @State private var url: String
     @State private var fileName: String = "download.bin"
     @State private var isCustomName: Bool = false
+
+    // Video metadata & quality selection state
+    @State private var isExtracting: Bool = false
+    @State private var extractedMetadata: VideoMetadata? = nil
+    @State private var selectedDownloadType: String = "VIDEO" // "VIDEO" or "AUDIO"
+    @State private var selectedFormat: FormatChoice? = nil
+
     let onAdd: (String, String) -> Void
     var onAddPlaylist: ((String, String, String?) -> Void)? = nil
 
@@ -32,6 +39,7 @@ public struct AddDownloadDialog: View {
     public var body: some View {
         NavigationView {
             Form {
+                // Section A: URL Input
                 Section(header: Text("Download URL (HTTP/HTTPS)")) {
                     HStack {
                         Image(systemName: "link")
@@ -45,6 +53,7 @@ public struct AddDownloadDialog: View {
                                     let detected = sanitizeFileName(extractFileName(from: newUrl))
                                     fileName = detected
                                 }
+                                triggerExtraction(newUrl)
                             }
 
                         if !url.isEmpty {
@@ -59,6 +68,7 @@ public struct AddDownloadDialog: View {
                             if let pasteString = UIPasteboard.general.string {
                                 let candidate = extractFirstUrl(from: pasteString) ?? pasteString.trimmingCharacters(in: .whitespacesAndNewlines)
                                 url = candidate
+                                triggerExtraction(candidate)
                             }
                         }) {
                             Image(systemName: "doc.on.clipboard")
@@ -73,6 +83,16 @@ public struct AddDownloadDialog: View {
                             .foregroundColor(MDMTheme.stateFailed)
                     }
 
+                    if isExtracting {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Inspecting video metadata and formats...")
+                                .font(.caption)
+                                .foregroundColor(MDMTheme.electricBlue)
+                        }
+                    }
+
                     if isPlaylist {
                         HStack(spacing: 8) {
                             Image(systemName: "list.bullet.rectangle.fill")
@@ -84,6 +104,58 @@ public struct AddDownloadDialog: View {
                     }
                 }
 
+                // Section B: Live Metadata Preview
+                if let meta = extractedMetadata {
+                    Section(header: Text("Video Metadata Preview")) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(meta.title)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(.primary)
+
+                            if let uploader = meta.uploader {
+                                Text("Channel: \(uploader)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        // Section C: Download Type Selector (Video vs Audio Only)
+                        Picker("Download Type", selection: $selectedDownloadType) {
+                            Text("Video (MP4)").tag("VIDEO")
+                            Text("Audio Only").tag("AUDIO")
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .onChange(of: selectedDownloadType) { newType in
+                            let ext = newType == "AUDIO" ? "mp3" : "mp4"
+                            fileName = "\(meta.title).\(ext)"
+                            if newType == "AUDIO" {
+                                selectedFormat = meta.formats.first(where: { $0.isAudio && !$0.isVideo }) ?? meta.formats.first
+                            } else {
+                                selectedFormat = meta.formats.first(where: { $0.isVideo }) ?? meta.formats.first
+                            }
+                        }
+
+                        // Section D: Available Quality Selector
+                        let choices = meta.formats.filter { selectedDownloadType == "AUDIO" ? $0.isAudio : $0.isVideo }
+                        if !choices.isEmpty {
+                            Picker("Quality", selection: Binding(
+                                get: { selectedFormat?.id ?? choices.first?.id ?? "" },
+                                set: { newId in
+                                    if let fmt = choices.first(where: { $0.id == newId }) {
+                                        selectedFormat = fmt
+                                        fileName = "\(meta.title).\(fmt.ext)"
+                                    }
+                                }
+                            )) {
+                                ForEach(choices) { fmt in
+                                    Text(fmt.label).tag(fmt.id)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Section E: Output File / Folder Name
                 Section(header: Text(isPlaylist ? "Playlist Folder / Title" : "File Name")) {
                     TextField(isPlaylist ? "e.g. My Playlist" : "e.g. video.mp4", text: $fileName)
                         .onChange(of: fileName) { _ in
@@ -91,8 +163,21 @@ public struct AddDownloadDialog: View {
                         }
                 }
 
-                Section(footer: Text("Saving to: Documents/Mister Download Manager/")) {
-                    EmptyView()
+                // Section F: Download Location
+                Section(header: Text("Download Location")) {
+                    HStack {
+                        Image(systemName: "folder.fill")
+                            .foregroundColor(MDMTheme.electricBlue)
+                        Text("Documents/Mister Download Manager")
+                            .font(.system(size: 14))
+                            .lineLimit(1)
+                        Spacer()
+                        Button("Change") {
+                            // System document folder selection
+                        }
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(MDMTheme.electricBlue)
+                    }
                 }
             }
             .navigationTitle(isPlaylist ? "New Playlist" : "New Download")
@@ -104,7 +189,7 @@ public struct AddDownloadDialog: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Start Download") {
-                        let trimmedUrl = url.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let finalUrl = selectedFormat?.downloadUrl ?? url.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard isValidScheme else { return }
                         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
                         let mdmDir = docs.appendingPathComponent("Mister Download Manager", isDirectory: true)
@@ -112,78 +197,74 @@ public struct AddDownloadDialog: View {
 
                         if isPlaylist, let addPl = onAddPlaylist {
                             let playlistTitle = fileName.isEmpty ? nil : fileName
-                            addPl(trimmedUrl, mdmDir.path, playlistTitle)
+                            addPl(finalUrl, mdmDir.path, playlistTitle)
                         } else {
                             let cleanName = sanitizeFileName(fileName)
                             let dest = mdmDir.appendingPathComponent(cleanName).path
-                            onAdd(trimmedUrl, dest)
+                            onAdd(finalUrl, dest)
                         }
                         presentationMode.wrappedValue.dismiss()
                     }
                     .disabled(!isValidScheme)
                 }
             }
-        }
-    }
-
-    public static func extractFirstUrl(from text: String?) -> String? {
-        guard let text = text, !text.isEmpty else { return nil }
-        let pattern = "https?://[^\\s\"'<>]+"
-        if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-           let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)),
-           let range = Range(match.range, in: text) {
-            let found = String(text[range])
-            return found.trimmingCharacters(in: CharacterSet(charactersIn: ".,);]"))
-        }
-        return nil
-    }
-
-    private func extractFirstUrl(from text: String?) -> String? {
-        AddDownloadDialog.extractFirstUrl(from: text)
-    }
-
-    private func extractFileName(from urlString: String) -> String {
-        guard let components = URLComponents(string: urlString) else {
-            return "download.bin"
-        }
-
-        // Check query items for name/title/filename
-        if let queryItems = components.queryItems {
-            for item in queryItems {
-                let nameKey = item.name.lowercased()
-                if (nameKey == "title" || nameKey == "filename" || nameKey == "file" || nameKey == "name"),
-                   let val = item.value, !val.isEmpty {
-                    let cleaned = val.removingPercentEncoding ?? val
-                    return cleaned.contains(".") ? cleaned : "\(cleaned).mp4"
-                }
-                if nameKey == "v", let val = item.value, !val.isEmpty {
-                    return "YouTube_Video_\(val).mp4"
+            .onAppear {
+                if !url.isEmpty {
+                    triggerExtraction(url)
                 }
             }
         }
+    }
 
-        if let host = components.host, host.contains("youtu.be") {
-            let pathSeg = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            if !pathSeg.isEmpty {
-                return "YouTube_Video_\(pathSeg).mp4"
+    private func triggerExtraction(_ inputUrl: String) {
+        let trimmed = inputUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") else { return }
+        guard !isPlaylist else { return }
+
+        isExtracting = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let meta = MdmMobileFFI.extractVideoMetadata(url: trimmed)
+            DispatchQueue.main.async {
+                self.isExtracting = false
+                if let m = meta {
+                    self.extractedMetadata = m
+                    if !self.isCustomName && !m.title.isEmpty {
+                        let ext = self.selectedDownloadType == "AUDIO" ? "mp3" : "mp4"
+                        self.fileName = "\(m.title).\(ext)"
+                    }
+                    self.selectedFormat = m.formats.first(where: { self.selectedDownloadType == "AUDIO" ? $0.isAudio && !$0.isVideo : $0.isVideo })
+                        ?? m.formats.first
+                }
             }
         }
-
-        let clean = urlString.components(separatedBy: "?")[0].components(separatedBy: "#")[0]
-        let name = (clean as NSString).lastPathComponent.removingPercentEncoding ?? (clean as NSString).lastPathComponent
-        if name.contains(".") {
-            return name
-        } else if !name.isEmpty && name != "/" {
-            return "\(name).mp4"
-        }
-        return "download.bin"
     }
 
     private func sanitizeFileName(_ name: String) -> String {
-        let illegal = CharacterSet(charactersIn: "/\\:*?\"<>|")
-        var cleaned = name.components(separatedBy: illegal).joined(separator: "_")
-        cleaned = cleaned.replacingOccurrences(of: "..", with: "")
-        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-        return cleaned.isEmpty ? "download.bin" : cleaned
+        let invalidCharacters = CharacterSet(charactersIn: "\\/:*?\"<>|")
+        var clean = name.components(separatedBy: invalidCharacters).joined()
+        clean = clean.replacingOccurrences(of: "..", with: "")
+        clean = clean.trimmingCharacters(in: .whitespacesAndNewlines)
+        return clean.isEmpty ? "download.bin" : clean
+    }
+
+    private func extractFileName(from urlString: String) -> String {
+        guard let url = URL(string: urlString) else { return "download.bin" }
+        let last = url.lastPathComponent
+        return last.isEmpty || last == "/" ? "download.bin" : last
+    }
+
+    private func extractFirstUrl(from text: String) -> String? {
+        let types: NSTextCheckingResult.CheckingType = .link
+        guard let detector = try? NSDataDetector(types: types.rawValue) else { return nil }
+        let matches = detector.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        for match in matches {
+            if let matchRange = Range(match.range, in: text) {
+                let candidate = String(text[matchRange])
+                if candidate.lowercased().hasPrefix("http://") || candidate.lowercased().hasPrefix("https://") {
+                    return candidate
+                }
+            }
+        }
+        return nil
     }
 }

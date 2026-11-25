@@ -10,9 +10,11 @@ public struct DownloadDetailsDialog: View {
                 Section(header: Text("File Information")) {
                     DetailRow(title: "File Name", value: task.fileName)
                     DetailRow(title: "Status", value: "\(task.state)".capitalized)
-                    DetailRow(title: "Downloaded", value: "\(task.downloadedBytes) bytes")
-                    if let total = task.totalBytes {
-                        DetailRow(title: "Total Size", value: "\(total) bytes")
+                    let downMb = Double(task.downloadedBytes) / 1_000_000.0
+                    DetailRow(title: "Downloaded", value: String(format: "%.2f MB", downMb))
+                    if task.totalBytes > 0 {
+                        let totMb = Double(task.totalBytes) / 1_000_000.0
+                        DetailRow(title: "Total Size", value: String(format: "%.2f MB", totMb))
                     }
                     if task.speedBytesPerSec > 0 {
                         DetailRow(title: "Speed", value: SpeedometerGaugeView.formatSpeed(task.speedBytesPerSec))

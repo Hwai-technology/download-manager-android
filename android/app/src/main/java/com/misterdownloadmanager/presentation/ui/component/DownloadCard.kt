@@ -73,8 +73,8 @@ fun DownloadCard(
     }
 
     val sizeText = if (task.totalBytes != null && task.totalBytes > 0) {
-        val downloadedMb = String.format("%.1f", task.downloadedBytes.toDouble() / (1024 * 1024))
-        val totalMb = String.format("%.1f MB", task.totalBytes.toDouble() / (1024 * 1024))
+        val downloadedMb = String.format(java.util.Locale.US, "%.2f MB", task.downloadedBytes.toDouble() / 1_000_000.0)
+        val totalMb = String.format(java.util.Locale.US, "%.2f MB", task.totalBytes.toDouble() / 1_000_000.0)
         "$downloadedMb / $totalMb"
     } else {
         formatByteSize(task.downloadedBytes)
@@ -163,18 +163,98 @@ fun DownloadCard(
                 }
             }
 
-            // Progress bar
+            // Dedicated Live MB Progress Card
             if (task.state == DownloadState.DOWNLOADING || task.state == DownloadState.PAUSED || task.state == DownloadState.PROBING) {
-                Spacer(modifier = Modifier.height(12.dp))
-                LinearProgressIndicator(
-                    progress = { task.progressFraction },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(3.dp)),
-                    color = stateColor,
-                    trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, stateColor.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Download Progress",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = stateColor
+                            )
+                            val percent = if (task.totalBytes != null && task.totalBytes > 0) {
+                                "${(task.progressFraction * 100).toInt()}%"
+                            } else {
+                                "--%"
+                            }
+                            Text(
+                                text = "Progress: $percent",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        val downloadedMb = String.format(java.util.Locale.US, "%.2f MB", task.downloadedBytes.toDouble() / 1_000_000.0)
+                        val totalMb = if (task.totalBytes != null && task.totalBytes > 0) {
+                            String.format(java.util.Locale.US, "%.2f MB", task.totalBytes.toDouble() / 1_000_000.0)
+                        } else {
+                            "-- MB"
+                        }
+
+                        Text(
+                            text = "$downloadedMb / $totalMb",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val remainingMbText = if (task.totalBytes != null && task.totalBytes > task.downloadedBytes) {
+                                val rem = (task.totalBytes - task.downloadedBytes).toDouble() / 1_000_000.0
+                                String.format(java.util.Locale.US, "Remaining: %.2f MB", rem)
+                            } else if (task.totalBytes != null && task.totalBytes <= task.downloadedBytes) {
+                                "Remaining: 0.00 MB"
+                            } else {
+                                "Remaining: -- MB"
+                            }
+                            Text(
+                                text = remainingMbText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            if (task.state == DownloadState.DOWNLOADING) {
+                                Text(
+                                    text = speedText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        LinearProgressIndicator(
+                            progress = { task.progressFraction },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = stateColor,
+                            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                        )
+                    }
+                }
             }
 
             // Error summary if failed
